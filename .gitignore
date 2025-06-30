@@ -2,7 +2,6 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
-.utmp/
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -10,7 +9,9 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
-*.log
+.idea/
+.vsconfig
+.DS_Store
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
@@ -48,6 +49,8 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
+#自定义属性文件不追踪
+*.userprop
 
 # Unity3D generated meta files
 *.pidb.meta
@@ -61,7 +64,6 @@ sysinfo.txt
 *.apk
 *.aab
 *.unitypackage
-*.unitypackage.meta
 *.app
 
 # Crashlytics generated file
