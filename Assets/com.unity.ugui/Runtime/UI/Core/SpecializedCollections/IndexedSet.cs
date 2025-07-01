@@ -4,6 +4,11 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UI.Collections
 {
+    /// <summary>
+    /// 顺序的Set
+    /// 会包含无效元素，无效元素会被移到队列末尾。通过指针标识当前有效队列长度
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     internal class IndexedSet<T> : IList<T>
     {
         //This is a container that gives:
