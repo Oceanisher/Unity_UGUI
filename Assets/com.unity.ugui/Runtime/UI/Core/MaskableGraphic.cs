@@ -6,6 +6,7 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// A Graphic that is capable of being masked out.
+    /// 可以被Mask的图形组件
     /// </summary>
     public abstract class MaskableGraphic : Graphic, IClippable, IMaskable, IMaterialModifier
     {

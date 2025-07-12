@@ -165,6 +165,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Mark the given RectTransform as needing it's layout to be recalculated during the next layout pass.
+        /// 对于一个给定的Rect，向上层（包含自身层）寻找最接近的带有ILayoutGroup组件的有效父节点，并注册到布局重建队列中
+        /// 会在下一个重建pass中重建
         /// </summary>
         /// <param name="rect">Rect to rebuild.</param>
         public static void MarkLayoutForRebuild(RectTransform rect)

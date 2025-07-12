@@ -38,6 +38,7 @@ namespace UnityEngine.UI
 
     /// <summary>
     /// This is an element that can live on a Canvas.
+    /// UI基础元素接口
     /// </summary>
     public interface ICanvasElement
     {
@@ -75,7 +76,7 @@ namespace UnityEngine.UI
 
     /// <summary>
     /// A place where CanvasElements can register themselves for rebuilding.
-    /// UI元素注册中心-单例
+    /// UI元素更新注册中心-单例
     /// UI元素将自身注册到这里，然后从这里被调用重建
     /// </summary>
     public class CanvasUpdateRegistry

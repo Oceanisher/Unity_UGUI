@@ -13,6 +13,8 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// Base class for all UI components that should be derived from when creating new Graphic types.
+    /// UI图形基类
+    /// 所有需要绘制的UI都继承自这个类: Text/Image/RawImage
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(RectTransform))]
@@ -82,13 +84,16 @@ namespace UnityEngine.UI
         : UIBehaviour,
           ICanvasElement
     {
+        //UI默认材质
         static protected Material s_DefaultUI = null;
+        //UI的默认纹理，OnEnable时会被赋值为白色
         static protected Texture2D s_WhiteTexture = null;
 
         /// <summary>
         /// Default material used to draw UI elements if no explicit material was specified.
         /// </summary>
 
+        //UI默认材质
         static public Material defaultGraphicMaterial
         {
             get
@@ -103,9 +108,12 @@ namespace UnityEngine.UI
         [FormerlySerializedAs("m_Mat")]
         [SerializeField] protected Material m_Material;
 
+        //图形顶点颜色，默认是白色。当通过color属性来修改颜色值的时候，会改变这个值
         [SerializeField] private Color m_Color = Color.white;
 
+        //是否跳过布局更新阶段
         [NonSerialized] protected bool m_SkipLayoutUpdate;
+        //是否跳过材质更新阶段
         [NonSerialized] protected bool m_SkipMaterialUpdate;
 
         /// <summary>
@@ -153,14 +161,21 @@ namespace UnityEngine.UI
         /// ]]>
         ///</code>
         /// </example>
-        public virtual Color color { get { return m_Color; } set { if (SetPropertyUtility.SetColor(ref m_Color, value)) SetVerticesDirty(); } }
+        //设置图形顶点颜色，有变更，就会设置顶点为Dirty
+        public virtual Color color { 
+            get { return m_Color; } 
+            set { if (SetPropertyUtility.SetColor(ref m_Color, value)) SetVerticesDirty(); } }
 
+        //是否接受射线检测
         [SerializeField] private bool m_RaycastTarget = true;
-
+        //是否接受射线检测的缓存标记，在改变 m_RaycastTarget 后，先判断与缓存值是不是一致，不一致才会进行操作
         private bool m_RaycastTargetCache = true;
 
         /// <summary>
         /// Should this graphic be considered a target for raycasting?
+        /// 是否能够接受射线，如果不接受，那么射线会穿过该元素、忽略该元素
+        /// 会注册/反注册到 GraphicRegistry
+        /// 不会触发重建逻辑
         /// </summary>
         public virtual bool raycastTarget
         {
@@ -189,6 +204,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Padding to be applied to the masking
+        /// 射线检测的Padding
         /// X = Left
         /// Y = Bottom
         /// Z = Right
@@ -203,26 +219,36 @@ namespace UnityEngine.UI
             }
         }
 
+        //为了访问速度缓存的RectTransform
         [NonSerialized] private RectTransform m_RectTransform;
         [NonSerialized] private CanvasRenderer m_CanvasRenderer;
         [NonSerialized] private Canvas m_Canvas;
 
+        //顶点信息是否Dirty
         [NonSerialized] private bool m_VertsDirty;
+        //材质信息是否Dirty
         [NonSerialized] private bool m_MaterialDirty;
 
+        //布局标记为Dirty的回调
         [NonSerialized] protected UnityAction m_OnDirtyLayoutCallback;
+        //顶点标记为Dirty的回调
         [NonSerialized] protected UnityAction m_OnDirtyVertsCallback;
+        //材质标记为Dirty的回调
         [NonSerialized] protected UnityAction m_OnDirtyMaterialCallback;
-
+        //图形的Mesh信息，生成、修改过程都会在这个Mesh上操作
         [NonSerialized] protected static Mesh s_Mesh;
         [NonSerialized] private static readonly VertexHelper s_VertexHelper = new VertexHelper();
 
+        //缓存的网格数据
         [NonSerialized] protected Mesh m_CachedMesh;
         [NonSerialized] protected Vector2[] m_CachedUvs;
         // Tween controls for the Graphic
+        //颜色动画组件
         [NonSerialized]
         private readonly TweenRunner<ColorTween> m_ColorTweenRunner;
 
+        //是否使用旧版Mesh生成方法
+        //默认是使用legacy，但是所有继承Graphic的组件，都设置为false，也就是使用新版的Mesh生成
         protected bool useLegacyMeshGeneration { get; set; }
 
         // Called by Unity prior to deserialization,
@@ -238,6 +264,7 @@ namespace UnityEngine.UI
         /// <summary>
         /// Set all properties of the Graphic dirty and needing rebuilt.
         /// Dirties Layout, Vertices, and Materials.
+        /// 布局、顶点、材质都设置为Dirty
         /// </summary>
         public virtual void SetAllDirty()
         {
@@ -269,15 +296,19 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Mark the layout as dirty and needing rebuilt.
+        /// 布局标记为Dirty，后面会触发布局更新
+        /// 如果当前是隐藏的、无效的，那么会跳过。
         /// </summary>
         /// <remarks>
         /// Send a OnDirtyLayoutCallback notification if any elements are registered. See RegisterDirtyLayoutCallback
         /// </remarks>
         public virtual void SetLayoutDirty()
         {
+            //如果当前是隐藏的、无效的，那么会跳过
             if (!IsActive())
                 return;
 
+            //将RectTransform注册到布局重建队列中
             LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
 
             if (m_OnDirtyLayoutCallback != null)
@@ -286,24 +317,29 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Mark the vertices as dirty and needing rebuilt.
+        /// 顶点数据标记为Dirty，后面会触发图形重建
         /// </summary>
         /// <remarks>
         /// Send a OnDirtyVertsCallback notification if any elements are registered. See RegisterDirtyVerticesCallback
         /// </remarks>
         public virtual void SetVerticesDirty()
         {
+            //如果当前是隐藏的、无效的，那么会跳过
             if (!IsActive())
                 return;
 
+            //顶点标记为Dirty，并注册到布局重建队列中。也就是说，顶点标记为Dirty之后，会触发图形重建
             m_VertsDirty = true;
             CanvasUpdateRegistry.RegisterCanvasElementForGraphicRebuild(this);
 
+            //顶点标记为Dirty的回调
             if (m_OnDirtyVertsCallback != null)
                 m_OnDirtyVertsCallback();
         }
 
         /// <summary>
         /// Mark the material as dirty and needing rebuilt.
+		/// 材质数据标记为Dirty，后面会触发图形重建
         /// </summary>
         /// <remarks>
         /// Send a OnDirtyMaterialCallback notification if any elements are registered. See RegisterDirtyMaterialCallback
@@ -319,7 +355,11 @@ namespace UnityEngine.UI
             if (m_OnDirtyMaterialCallback != null)
                 m_OnDirtyMaterialCallback();
         }
-
+        
+        /// <summary>
+        /// 变更是否接受射线检测
+        /// 方法内容与 raycastTarget 的Set方法一致
+        /// </summary>
         public void SetRaycastDirty()
         {
             if (m_RaycastTargetCache != m_RaycastTarget)
@@ -333,8 +373,13 @@ namespace UnityEngine.UI
             m_RaycastTargetCache = m_RaycastTarget;
         }
 
+        /// <summary>
+        /// RectTransform尺寸发生变化时调用
+        /// 触发布局重建、图形重建
+        /// </summary>
         protected override void OnRectTransformDimensionsChange()
         {
+            //元素处于Active时才会处理
             if (gameObject.activeInHierarchy)
             {
                 // prevent double dirtying...
@@ -354,12 +399,17 @@ namespace UnityEngine.UI
             LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
         }
 
+        /// <summary>
+        /// 元素的父节点切换，也就是从一个Trs变更到另一个Trs上
+        /// 会重新找一个最近的父Canvas，然后关联上。并且触发全部重建。
+        /// </summary>
         protected override void OnTransformParentChanged()
         {
             base.OnTransformParentChanged();
 
             m_Canvas = null;
 
+            //InActive时，不处理
             if (!IsActive())
                 return;
 
@@ -370,6 +420,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Absolute depth of the graphic, used by rendering and events -- lowest to highest.
+        /// 元素的绝对深度值
+        /// 是一个只读的、从CanvasRenderer读取出来的
+        /// 深度值取决于它的第一个根Canvas，如下面的排列
         /// </summary>
         /// <example>
         /// The depth is relative to the first root canvas.
@@ -388,6 +441,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The RectTransform component used by the Graphic. Cached for speed.
+        /// 为了访问速度缓存的RectTransform
         /// </summary>
         public RectTransform rectTransform
         {
@@ -405,6 +459,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// A reference to the Canvas this Graphic is rendering to.
+        /// 元素归属的、最近的父Canvas
         /// </summary>
         /// <remarks>
         /// In the situation where the Graphic is used in a hierarchy with multiple Canvases, the Canvas closest to the root will be used.
@@ -419,6 +474,10 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// //找到最接近的、父节点的Canvas，然后赋值给 m_Canvas
+        /// 如果没找到，m_Canvas = null
+        /// </summary>
         private void CacheCanvas()
         {
             var list = ListPool<Canvas>.Get();
@@ -449,6 +508,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// A reference to the CanvasRenderer populated by this Graphic.
+        /// 元素身上的 CanvasRenderer ，如果没有会自动添加一个
+        /// 因为这个 CanvasRenderer 是渲染图形必须的
         /// </summary>
         public CanvasRenderer canvasRenderer
         {
@@ -471,6 +532,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns the default material for the graphic.
+        /// UI元素的默认材质
         /// </summary>
         public virtual Material defaultMaterial
         {
@@ -479,6 +541,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The Material set by the user
+        /// 元素的材质
+        /// Get时，如果没有自定义材质、那么返回默认材质
+        /// Set时，会设置材质Dirty、触发图形重建
         /// </summary>
         public virtual Material material
         {
@@ -498,6 +563,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The material that will be sent for Rendering (Read only).
+        /// 渲染真正使用的材质
+        /// 会把元素组件上所有的 IMaterialModifier 都调用一遍，把原有的 material 修改一遍，然后用于渲染
+        /// 每次图形重建都会调用一次
         /// </summary>
         /// <remarks>
         /// This is the material that actually gets sent to the CanvasRenderer. By default it's the same as [[Graphic.material]]. When extending Graphic you can override this to send a different material to the CanvasRenderer than the one set by Graphic.material. This is useful if you want to modify the user set material in a non destructive manner.
@@ -519,6 +587,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The graphic's texture. (Read Only).
+        /// 元素的纹理（可重载），默认就是纯白色
+        /// 用于CanvasRenderer => 材质 => Shader中的 _MainTex
+        /// 由于UGUI会进行合批操作，所以重载后这里的纹理最好使用图集中的纹理
+        /// Image、Text、RawImage都重写了这个纹理
         /// </summary>
         /// <remarks>
         /// This is the Texture that gets passed to the CanvasRenderer, Material and then Shader _MainTex.
@@ -537,6 +609,11 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Mark the Graphic and the canvas as having been changed.
+        /// OnEnable时的元素处理流程
+        /// 1.设置父节点Canvas
+        /// 2.与父节点Canvas在GraphicCanvas中建立关系
+        /// 3.把 s_WhiteTexture 设置为纯白色
+        /// 4.SetAllDirty，触发布局、纹理重建
         /// </summary>
         protected override void OnEnable()
         {
@@ -555,6 +632,13 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Clear references.
+        /// OnDisable时的元素处理流程
+        /// 1.与父Canvas取消关联-暂时
+        /// 2.从所有重建队列中取消-暂时
+        /// 3.CanvasRenderer 清理所有顶点数据
+        /// 4.将它或者最近的、带有ILayoutGroup的组件加入到布局重建队列中，等待布局重建
+        ///
+        /// 都是调用Disable接口，实际上是把它们都放到IndexedSet的末尾上，而不是真正删除
         /// </summary>
         protected override void OnDisable()
         {
@@ -572,6 +656,14 @@ namespace UnityEngine.UI
             base.OnDisable();
         }
 
+        /// <summary>
+        /// OnDestroy元素的处理流程
+        /// 1.与父Canvas取消关联-直接删除
+        /// 2.从所有重建队列中取消-直接删除
+        /// 3.销毁网格数据
+        ///
+        /// 都是调用Unregister接口，是真正的从队列中删除
+        /// </summary>
         protected override void OnDestroy()
         {
 #if UNITY_EDITOR
@@ -586,8 +678,13 @@ namespace UnityEngine.UI
             base.OnDestroy();
         }
 
+        /// <summary>
+        /// 元素的归属Canvas切换，也就是从一个Canvas变更到另一个Canvas上
+        /// </summary>
+        /// <returns></returns>
         protected override void OnCanvasHierarchyChanged()
         {
+            //先缓存当前的Canvas
             // Use m_Cavas so we dont auto call CacheCanvas
             Canvas currentCanvas = m_Canvas;
 
@@ -600,8 +697,10 @@ namespace UnityEngine.UI
                 return;
             }
 
+            //重新找新的父Canvas
             CacheCanvas();
 
+            //如果新的父节点Canvas与老的不一致，那么解除与老Canvas的关联、重新关联到新的Canvas上
             if (currentCanvas != m_Canvas)
             {
                 GraphicRegistry.UnregisterGraphicForCanvas(currentCanvas, this);
@@ -630,6 +729,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Rebuilds the graphic geometry and its material on the PreRender cycle.
+        /// 图形重建
+        /// 在PreRender阶段执行，会更新几何图形、更新材质
         /// </summary>
         /// <param name="update">The current step of the rendering CanvasUpdate cycle.</param>
         /// <remarks>
@@ -637,6 +738,7 @@ namespace UnityEngine.UI
         /// </remarks>
         public virtual void Rebuild(CanvasUpdate update)
         {
+            //没有CanvasRenderer、或者被Clip掉了，那么不会绘制
             if (canvasRenderer == null || canvasRenderer.cull)
                 return;
 
@@ -657,14 +759,22 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 布局重建结束调用
+        /// </summary>
         public virtual void LayoutComplete()
         {}
 
+        /// <summary>
+        /// 图形重建结束调用
+        /// </summary>
         public virtual void GraphicUpdateComplete()
         {}
 
         /// <summary>
         /// Call to update the Material of the graphic onto the CanvasRenderer.
+        /// 更新材质信息
+        /// 把材质、主纹理写入到CanvasRenderer中
         /// </summary>
         protected virtual void UpdateMaterial()
         {
@@ -678,6 +788,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Call to update the geometry of the Graphic onto the CanvasRenderer.
+        /// 更新几何信息
+        /// 实际上是把顶点信息写入到CanvasRenderer中
         /// </summary>
         protected virtual void UpdateGeometry()
         {
@@ -691,13 +803,19 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// Mesh生成
+        /// 最终将顶点信息写入到CanvasRenderer中
+        /// </summary>
         private void DoMeshGeneration()
         {
+            //RectTrs必须尺寸>=0的情况下才会绘制，否则将清空顶点
             if (rectTransform != null && rectTransform.rect.width >= 0 && rectTransform.rect.height >= 0)
                 OnPopulateMesh(s_VertexHelper);
             else
                 s_VertexHelper.Clear(); // clear the vertex helper so invalid graphics dont draw.
 
+            //生成原始顶点信息后，使用IMeshModifier对顶点进行修改
             var components = ListPool<Component>.Get();
             GetComponents(typeof(IMeshModifier), components);
 
@@ -706,10 +824,15 @@ namespace UnityEngine.UI
 
             ListPool<Component>.Release(components);
 
+            //顶点信息从VertextHelper、写入到workerMesh中
             s_VertexHelper.FillMesh(workerMesh);
+            //顶点信息写入到CanvasRenderer中
             canvasRenderer.SetMesh(workerMesh);
         }
 
+        /// <summary>
+        /// Mesh生成-旧
+        /// </summary>
         private void DoLegacyMeshGeneration()
         {
             if (rectTransform != null && rectTransform.rect.width >= 0 && rectTransform.rect.height >= 0)
@@ -737,6 +860,7 @@ namespace UnityEngine.UI
             canvasRenderer.SetMesh(workerMesh);
         }
 
+        //图形的Mesh信息
         protected static Mesh workerMesh
         {
             get
@@ -769,6 +893,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Callback function when a UI element needs to generate vertices. Fills the vertex buffer data.
+        /// 顶点信息生成，写入到VertexHelper中
+        /// 图形类子类都会重写这个方法，来实现自己的顶点布局
         /// </summary>
         /// <param name="vh">VertexHelper utility.</param>
         /// <remarks>
@@ -776,16 +902,22 @@ namespace UnityEngine.UI
         /// </remarks>
         protected virtual void OnPopulateMesh(VertexHelper vh)
         {
+            //获取像素适配后的图形区域
             var r = GetPixelAdjustedRect();
+            //计算区域的左下、右上角
             var v = new Vector4(r.x, r.y, r.x + r.width, r.y + r.height);
 
+            //绘制了一个矩形图形
             Color32 color32 = color;
             vh.Clear();
+            //顶点环绕方向：顺时针，UV：左下角为原点
+            //所以这里顶点的添加顺序是左下、左上、右上、右下，UV也是如此
             vh.AddVert(new Vector3(v.x, v.y), color32, new Vector2(0f, 0f));
             vh.AddVert(new Vector3(v.x, v.w), color32, new Vector2(0f, 1f));
             vh.AddVert(new Vector3(v.z, v.w), color32, new Vector2(1f, 1f));
             vh.AddVert(new Vector3(v.z, v.y), color32, new Vector2(1f, 0f));
 
+            //三角形环绕是顺时针顺序，这里绘制了2个三角形
             vh.AddTriangle(0, 1, 2);
             vh.AddTriangle(2, 3, 0);
         }
@@ -822,7 +954,10 @@ namespace UnityEngine.UI
 #endif
 
         // Call from unity if animation properties have changed
-
+        /// <summary>
+        /// 当UI的动画属性应用时调用，图形、布局全部重建
+        /// 所以动画的播放会触发重建，动静分离的重要性
+        /// </summary>
         protected override void OnDidApplyAnimationProperties()
         {
             SetAllDirty();
@@ -835,6 +970,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// When a GraphicRaycaster is raycasting into the scene it does two things. First it filters the elements using their RectTransform rect. Then it uses this Raycast function to determine the elements hit by the raycast.
+        /// 射线检测接口
+        /// 首先，上层遍历时是取了某个Canvas下所有接受射线的元素。
+        /// 所以这里遍历到Canvas时就停止了，不会再往上找其他节点
         /// </summary>
         /// <param name="sp">Screen point being tested</param>
         /// <param name="eventCamera">Camera that is being used for the testing.</param>
@@ -856,16 +994,21 @@ namespace UnityEngine.UI
                 for (var i = 0; i < components.Count; i++)
                 {
                     var canvas = components[i] as Canvas;
+                    //overrideSorting字段用来重写排序，使其不受父对象的Sorting控制
                     if (canvas != null && canvas.overrideSorting)
                         continueTraversal = false;
 
                     var filter = components[i] as ICanvasRaycastFilter;
-
+                    //ICanvasRaycastFilter只有Mask的2个类继承了，所以如果没有Mask，那么射线就是命中了，就不用再看经过Mask裁剪后的区域是否命中了
                     if (filter == null)
                         continue;
 
+                    //如果该组件有Mask，那么需要判断射线是否命中的Mask后的区域内
                     var raycastValid = true;
 
+                    //如果组件上有CanvasGroup，这个组件是用来统一控制子节点的透明度、是否能交互、是否阻止射线、是否忽略父节点的Group等
+                    //这里的代码貌似有问题，无论如何都会调用 filter.IsRaycastLocationValid()，那为何还要进行这么多判断
+                    //filter.IsRaycastLocationValid()是各个实现接口的组件来处理，决定射线是否能成功打到该点上
                     var group = components[i] as CanvasGroup;
                     if (group != null)
                     {
@@ -893,6 +1036,7 @@ namespace UnityEngine.UI
                 }
                 t = continueTraversal ? t.parent : null;
             }
+            //如果没有被filter拦截，那么就是成功命中了该组件
             ListPool<Component>.Release(components);
             return true;
         }
@@ -908,6 +1052,8 @@ namespace UnityEngine.UI
 
         ///<summary>
         ///Adjusts the given pixel to be pixel perfect.
+        /// 传入一个Vector2，返回像素对齐后的点
+        /// 与 GetPixelAdjustedRect() 同理
         ///</summary>
         ///<param name="point">Local space point.</param>
         ///<returns>Pixel perfect adjusted point.</returns>
@@ -926,6 +1072,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns a pixel perfect Rect closest to the Graphic RectTransform.
+        /// 获取经过不同分辨率适配后的像素大小
+        /// 非Canvas，与分辨率无关，直接返回Rect区域
+        /// Canvas：非世界空间的、缩放不是0的、像素对齐的，需要返回像素适配后的Rect
+        /// 需要注意的是，像素对齐会使得位置信息完全匹配像素，比如(1.2, 1.05)会强制变为(1, 1)，所以可能会导致位置失控
         /// </summary>
         /// <remarks>
         /// Note: This is only accurate if the Graphic root Canvas is in Screen Space.
@@ -941,6 +1091,7 @@ namespace UnityEngine.UI
 
         ///<summary>
         ///Tweens the CanvasRenderer color associated with this Graphic.
+        /// 颜色淡入淡出
         ///</summary>
         ///<param name="targetColor">Target color.</param>
         ///<param name="duration">Tween duration.</param>
@@ -953,17 +1104,20 @@ namespace UnityEngine.UI
 
         ///<summary>
         ///Tweens the CanvasRenderer color associated with this Graphic.
+        /// 颜色淡入淡出
         ///</summary>
         ///<param name="targetColor">Target color.</param>
         ///<param name="duration">Tween duration.</param>
         ///<param name="ignoreTimeScale">Should ignore Time.scale?</param>
-        ///<param name="useAlpha">Should also Tween the alpha channel?</param>
-        /// <param name="useRGB">Should the color or the alpha be used to tween</param>
+        ///<param name="useAlpha">Should also Tween the alpha channel? 是否要控制透明度</param>
+        /// <param name="useRGB">Should the color or the alpha be used to tween 是否要控制颜色</param>
         public virtual void CrossFadeColor(Color targetColor, float duration, bool ignoreTimeScale, bool useAlpha, bool useRGB)
         {
+            //useAlpha、useRGB同时为false的话，代表什么也不控制，就跳过
             if (canvasRenderer == null || (!useRGB && !useAlpha))
                 return;
 
+            //获取当前颜色
             Color currentColor = canvasRenderer.GetColor();
             if (currentColor.Equals(targetColor))
             {
@@ -975,6 +1129,7 @@ namespace UnityEngine.UI
                 ColorTween.ColorTweenMode.All :
                 (useRGB ? ColorTween.ColorTweenMode.RGB : ColorTween.ColorTweenMode.Alpha));
 
+            //执行动画
             var colorTween = new ColorTween {duration = duration, startColor = canvasRenderer.GetColor(), targetColor = targetColor};
             colorTween.AddOnChangedCallback(canvasRenderer.SetColor);
             colorTween.ignoreTimeScale = ignoreTimeScale;
@@ -982,6 +1137,12 @@ namespace UnityEngine.UI
             m_ColorTweenRunner.StartTween(colorTween);
         }
 
+        /// <summary>
+        /// 根据透明度创建颜色
+        /// 创建的是黑色，然后设置透明度
+        /// </summary>
+        /// <param name="alpha"></param>
+        /// <returns></returns>
         static private Color CreateColorFromAlpha(float alpha)
         {
             var alphaColor = Color.black;
@@ -991,6 +1152,7 @@ namespace UnityEngine.UI
 
         ///<summary>
         ///Tweens the alpha of the CanvasRenderer color associated with this Graphic.
+        /// 透明度淡入淡出
         ///</summary>
         ///<param name="alpha">Target alpha.</param>
         ///<param name="duration">Duration of the tween in seconds.</param>
@@ -1002,6 +1164,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Add a listener to receive notification when the graphics layout is dirtied.
+        /// 注册布局设置为Dirty时的回调
         /// </summary>
         /// <param name="action">The method to call when invoked.</param>
         public void RegisterDirtyLayoutCallback(UnityAction action)
@@ -1011,6 +1174,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Remove a listener from receiving notifications when the graphics layout are dirtied
+        /// 取消注册布局设置为Dirty时的回调
         /// </summary>
         /// <param name="action">The method to call when invoked.</param>
         public void UnregisterDirtyLayoutCallback(UnityAction action)
@@ -1020,6 +1184,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Add a listener to receive notification when the graphics vertices are dirtied.
+        /// 注册顶点设置为Dirty时的回调
         /// </summary>
         /// <param name="action">The method to call when invoked.</param>
         public void RegisterDirtyVerticesCallback(UnityAction action)
@@ -1029,6 +1194,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Remove a listener from receiving notifications when the graphics vertices are dirtied
+        /// 取消注册顶点设置为Dirty时的回调
         /// </summary>
         /// <param name="action">The method to call when invoked.</param>
         public void UnregisterDirtyVerticesCallback(UnityAction action)
@@ -1038,6 +1204,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Add a listener to receive notification when the graphics material is dirtied.
+        /// 注册材质设置为Dirty时的回调
         /// </summary>
         /// <param name="action">The method to call when invoked.</param>
         public void RegisterDirtyMaterialCallback(UnityAction action)
@@ -1047,6 +1214,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Remove a listener from receiving notifications when the graphics material are dirtied
+        /// 取消注册顶点设置为Dirty时的回调
         /// </summary>
         /// <param name="action">The method to call when invoked.</param>
         public void UnregisterDirtyMaterialCallback(UnityAction action)

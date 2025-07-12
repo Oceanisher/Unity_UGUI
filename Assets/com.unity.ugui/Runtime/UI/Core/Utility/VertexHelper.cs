@@ -6,6 +6,8 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// A utility class that can aid in the generation of meshes for the UI.
+    /// UI的顶点生成辅助工具
+    /// 顶点信息都会暂存到该类中
     /// </summary>
     /// <remarks>
     /// This class implements IDisposable to aid with memory management.
@@ -49,10 +51,10 @@ namespace UnityEngine.UI
         private List<Vector4> m_Uv3S;
         private List<Vector3> m_Normals;
         private List<Vector4> m_Tangents;
-        private List<int> m_Indices;
+        private List<int> m_Indices;//顶点序列环绕
 
-        private static readonly Vector4 s_DefaultTangent = new Vector4(1.0f, 0.0f, 0.0f, -1.0f);
-        private static readonly Vector3 s_DefaultNormal = Vector3.back;
+        private static readonly Vector4 s_DefaultTangent = new Vector4(1.0f, 0.0f, 0.0f, -1.0f);//默认切线
+        private static readonly Vector3 s_DefaultNormal = Vector3.back;//默认法线
 
         private bool m_ListsInitalized = false;
 
@@ -79,6 +81,9 @@ namespace UnityEngine.UI
             m_Indices.AddRange(m.GetIndices(0));
         }
 
+        /// <summary>
+        /// 初始化各个变量
+        /// </summary>
         private void InitializeListIfRequired()
         {
             if (!m_ListsInitalized)
@@ -98,6 +103,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Cleanup allocated memory.
+        /// 释放变量
         /// </summary>
         public void Dispose()
         {
@@ -129,6 +135,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Clear all vertices from the stream.
+        /// 重置各个变量
         /// </summary>
         public void Clear()
         {
@@ -149,6 +156,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Current number of vertices in the buffer.
+        /// 当前顶点数量
         /// </summary>
         public int currentVertCount
         {
@@ -157,6 +165,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Get the number of indices set on the VertexHelper.
+        /// 顶点序列环绕数量
         /// </summary>
         public int currentIndexCount
         {
@@ -165,6 +174,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Fill a UIVertex with data from index i of the stream.
+        /// 从自己缓存的顶点数据中获取指定的顶点，并塞入到ref的UIVertex中
         /// </summary>
         /// <param name="vertex">Vertex to populate</param>
         /// <param name="i">Index to populate.</param>
@@ -184,6 +194,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Set a UIVertex at the given index.
+        /// 把缓存的顶点中指定位置的顶点，替换成传入的UIVertex
         /// </summary>
         /// <param name="vertex">The vertex to fill</param>
         /// <param name="i">the position in the current list to fill.</param>
@@ -203,6 +214,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Fill the given mesh with the stream data.
+        /// 把缓存的顶点信息，写入到入参的Mesh中。
+        /// 入参的Mesh先清空，再被写入
         /// </summary>
         public void FillMesh(Mesh mesh)
         {

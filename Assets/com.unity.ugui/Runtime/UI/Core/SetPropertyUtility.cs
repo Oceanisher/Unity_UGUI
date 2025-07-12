@@ -4,8 +4,18 @@ using UnityEngine.Events;
 
 namespace UnityEngine.UI
 {
+    /// <summary>
+    /// Property设置工具类
+    /// </summary>
     internal static class SetPropertyUtility
     {
+        /// <summary>
+        /// 设置颜色
+        /// 有变更才会返回True
+        /// </summary>
+        /// <param name="currentValue"></param>
+        /// <param name="newValue"></param>
+        /// <returns></returns>
         public static bool SetColor(ref Color currentValue, Color newValue)
         {
             if (currentValue.r == newValue.r && currentValue.g == newValue.g && currentValue.b == newValue.b && currentValue.a == newValue.a)

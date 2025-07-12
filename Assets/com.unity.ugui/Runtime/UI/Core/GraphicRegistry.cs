@@ -5,12 +5,17 @@ namespace UnityEngine.UI
 {
     /// <summary>
     ///   Registry which maps a Graphic to the canvas it belongs to.
+    /// 图形注册中心-单例
+    /// 存储了Canvas与它的元素的映射关系，也就是说一个Canvas里包含哪些元素
+    /// 也存储了Canvas中哪些元素需要接受射线检测
     /// </summary>
     public class GraphicRegistry
     {
         private static GraphicRegistry s_Instance;
-
+        
+        //Canvas与元素映射关系
         private readonly Dictionary<Canvas, IndexedSet<Graphic>> m_Graphics = new Dictionary<Canvas, IndexedSet<Graphic>>();
+        //Canvas中需要接受射线检测的元素的映射关系
         private readonly Dictionary<Canvas, IndexedSet<Graphic>> m_RaycastableGraphics = new Dictionary<Canvas, IndexedSet<Graphic>>();
 
         protected GraphicRegistry()
@@ -71,6 +76,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Associates a raycastable Graphic with a Canvas and stores this association in the registry.
+        /// 注册某个Canvas下的某个元素需要接受射线检测
         /// </summary>
         /// <param name="c">The canvas being associated with the Graphic.</param>
         /// <param name="graphic">The Graphic being associated with the Canvas.</param>

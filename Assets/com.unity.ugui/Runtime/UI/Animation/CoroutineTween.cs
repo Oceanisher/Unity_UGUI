@@ -20,11 +20,14 @@ namespace UnityEngine.UI.CoroutineTween
     // the value on the target.
     internal struct ColorTween : ITweenValue
     {
+        /// <summary>
+        /// 颜色动画控制方式
+        /// </summary>
         public enum ColorTweenMode
         {
-            All,
-            RGB,
-            Alpha
+            All,//全部控制
+            RGB,//只控制RGB
+            Alpha //控制透明通道
         }
 
         public class ColorTweenCallback : UnityEvent<Color> {}

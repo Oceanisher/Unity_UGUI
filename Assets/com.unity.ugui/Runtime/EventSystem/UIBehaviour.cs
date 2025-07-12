@@ -2,6 +2,8 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// Base behaviour that has protected implementations of Unity lifecycle functions.
+    /// UI的Mono类
+    /// MonoBehaviour的子类
     /// </summary>
     public abstract class UIBehaviour : MonoBehaviour
     {
@@ -37,24 +39,38 @@ namespace UnityEngine.EventSystems
 #endif
         /// <summary>
         /// This callback is called when the dimensions of an associated RectTransform change. It is always called before Awake, OnEnable, or Start. The call is also made to all child RectTransforms, regardless of whether their dimensions change (which depends on how they are anchored).
+        /// RectTransform 尺寸发生改变时调用
         /// </summary>
         protected virtual void OnRectTransformDimensionsChange()
         {}
 
+        /// <summary>
+        /// 父节点发生变更前调用
+        /// </summary>
         protected virtual void OnBeforeTransformParentChanged()
         {}
 
+        /// <summary>
+        /// 父节点发生变更后调用
+        /// </summary>
         protected virtual void OnTransformParentChanged()
         {}
 
+        /// <summary>
+        /// 当UI的动画属性应用时调用
+        /// </summary>
         protected virtual void OnDidApplyAnimationProperties()
         {}
 
+        /// <summary>
+        /// CanvasGroup发生变更时调用
+        /// </summary>
         protected virtual void OnCanvasGroupChanged()
         {}
 
         /// <summary>
         /// Called when the state of the parent Canvas is changed.
+        /// 父Canvas变更时调用，比如Canvas禁用等
         /// </summary>
         protected virtual void OnCanvasHierarchyChanged()
         {}
