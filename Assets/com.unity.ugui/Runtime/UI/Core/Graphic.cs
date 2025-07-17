@@ -714,12 +714,14 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// This method must be called when <c>CanvasRenderer.cull</c> is modified.
-        /// </summary>
+        /// 仅在 CanvasRenderer.cull 变更后调用，变更是否剔除
+        /// </summary> 
         /// <remarks>
         /// This can be used to perform operations that were previously skipped because the <c>Graphic</c> was culled.
         /// </remarks>
         public virtual void OnCullingChanged()
         {
+            //如果不进行剔除、并且有任意Dirty，那么进行图形重建
             if (!canvasRenderer.cull && (m_VertsDirty || m_MaterialDirty))
             {
                 /// When we were culled, we potentially skipped calls to <c>Rebuild</c>.

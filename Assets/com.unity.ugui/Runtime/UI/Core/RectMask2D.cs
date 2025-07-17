@@ -11,6 +11,9 @@ namespace UnityEngine.UI
     [RequireComponent(typeof(RectTransform))]
     /// <summary>
     /// A 2D rectangular mask that allows for clipping / masking of areas outside the mask.
+    /// 矩形区域裁剪接口
+    /// 不是通过模板测试，而是通过设置矩形区域，然后超出区域外的元素透明度设置为0.
+    /// 然后shader会丢弃透明度小于0.001的片元，从而实现遮罩效果
     /// </summary>
     /// <remarks>
     /// The RectMask2D behaves in a similar way to a standard Mask component. It differs though in some of the restrictions that it has.

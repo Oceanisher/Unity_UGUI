@@ -50,6 +50,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Find a root Canvas.
+        /// 往上找，找到最根节点的Canvas、或者第一个重写了排序的Canvas
         /// </summary>
         /// <param name="start">Transform to start the search at going up the hierarchy.</param>
         /// <returns>Finds either the most root canvas, or the first canvas that overrides sorting.</returns>
@@ -74,6 +75,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Find the stencil depth for a given element.
+        /// 计算元素模板深度值
+        /// 给一个Trs，然后往上进行遍历、找到每一个有Mask组件的元素，一直到指定的Trs停止
+        /// 每找到一个Mask，那么入参的Trs的模板深度值+1
+        /// 也就是说，按照从上往下的顺序，每个Mask的深度+1，同层的Mask深度值一致
         /// </summary>
         /// <param name="transform">The starting transform to search.</param>
         /// <param name="stopAfter">Where the search of parents should stop</param>
@@ -109,6 +114,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Helper function to determine if the child is a descendant of father or is father.
+        /// 判断某个B是否是A的子节点、或者B=A
         /// </summary>
         /// <param name="father">The transform to compare against.</param>
         /// <param name="child">The starting transform to search up the hierarchy.</param>
@@ -134,6 +140,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Find the correct RectMask2D for a given IClippable.
+        /// 对于一个给定的有IClippable的元素，往上遍历寻找某个带有RectMask2D的父节点
         /// </summary>
         /// <param name="clippable">Clippable to search from.</param>
         /// <returns>The Correct RectMask2D</returns>
@@ -143,6 +150,7 @@ namespace UnityEngine.UI
             List<Canvas> canvasComponents = ListPool<Canvas>.Get();
             RectMask2D componentToReturn = null;
 
+            //找到所有带有RectMask2D的父节点
             clippable.gameObject.GetComponentsInParent(false, rectMaskComponents);
 
             if (rectMaskComponents.Count > 0)
@@ -150,6 +158,7 @@ namespace UnityEngine.UI
                 for (int rmi = 0; rmi < rectMaskComponents.Count; rmi++)
                 {
                     componentToReturn = rectMaskComponents[rmi];
+                    //父节点不能是入参的节点
                     if (componentToReturn.gameObject == clippable.gameObject)
                     {
                         componentToReturn = null;
@@ -160,9 +169,11 @@ namespace UnityEngine.UI
                         componentToReturn = null;
                         continue;
                     }
+                    //找到所有带有Canvas父节点
                     clippable.gameObject.GetComponentsInParent(false, canvasComponents);
                     for (int i = canvasComponents.Count - 1; i >= 0; i--)
                     {
+                        //如果找到的有RectMask2D的父节点，跟入参的节点的不在同一个Canvas下，并且该Canvas是一个重写了排序的Canvas，那么直接跳出
                         if (!IsDescendantOrSelf(canvasComponents[i].transform, componentToReturn.transform) && canvasComponents[i].overrideSorting)
                         {
                             componentToReturn = null;
