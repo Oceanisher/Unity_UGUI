@@ -5,6 +5,8 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// Registry class to keep track of all IClippers that exist in the scene
+    /// 裁剪注册中心
+    /// 裁切过程在布局重建后、图形重建前
     /// </summary>
     /// <remarks>
     /// This is used during the CanvasUpdate loop to cull clippable elements. The clipping is called after layout, but before Graphic update.
@@ -13,6 +15,7 @@ namespace UnityEngine.UI
     {
         static ClipperRegistry s_Instance;
 
+        //存储所有的IClipper裁切器
         readonly IndexedSet<IClipper> m_Clippers = new IndexedSet<IClipper>();
 
         protected ClipperRegistry()
@@ -38,6 +41,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Perform the clipping on all registered IClipper
+        /// 执行裁切器的裁切接口
         /// </summary>
         public void Cull()
         {
@@ -50,6 +54,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Register a unique IClipper element
+        /// 注册一个裁切器
         /// </summary>
         /// <param name="c">The clipper element to add</param>
         public static void Register(IClipper c)
@@ -61,6 +66,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// UnRegister a IClipper element
+        /// 注销一个裁切器
         /// </summary>
         /// <param name="c">The Element to try and remove.</param>
         public static void Unregister(IClipper c)
@@ -70,6 +76,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Disable a IClipper element
+        /// 裁切器置为无效
         /// </summary>
         /// <param name="c">The Element to try and disable.</param>
         public static void Disable(IClipper c)

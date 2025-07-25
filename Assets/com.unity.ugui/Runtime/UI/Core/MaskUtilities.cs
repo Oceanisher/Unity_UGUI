@@ -10,6 +10,7 @@ namespace UnityEngine.UI
     {
         /// <summary>
         /// Notify all IClippables under the given component that they need to recalculate clipping.
+        /// 通知在某个Mask下的所有可裁剪的元素，进行裁剪计算
         /// </summary>
         /// <param name="mask">The object thats changed for whose children should be notified.</param>
         public static void Notify2DMaskStateChanged(Component mask)
@@ -192,6 +193,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Search for all RectMask2D that apply to the given RectMask2D (includes self).
+        /// 找到RectMask2D的所有上级RectMask2D，包含它自己
         /// </summary>
         /// <param name="clipper">Starting clipping object.</param>
         /// <param name="masks">The list of Rect masks</param>

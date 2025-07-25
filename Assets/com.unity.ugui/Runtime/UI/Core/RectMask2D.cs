@@ -33,18 +33,25 @@ namespace UnityEngine.UI
         private RectTransform m_RectTransform;
 
         [NonSerialized]
+        //存储所有子节点的带有MaskableGraphic的可裁剪子节点，与m_ClipTargets互斥
+        //如果子节点和该RectMask2D之间还有其他RectMask2D,那么子节点将存储到其他RectMask2D中，也就是说该列表只存储中间没有其他RectMask2D的所有子节点
         private HashSet<MaskableGraphic> m_MaskableTargets = new HashSet<MaskableGraphic>();
 
         [NonSerialized]
+        //存储所有子节点的带有IClippable、且不是MaskableGraphic的可裁剪子节点，与m_MaskableTargets互斥
+        //如果子节点和该RectMask2D之间还有其他RectMask2D,那么子节点将存储到其他RectMask2D中，也就是说该列表只存储中间没有其他RectMask2D的所有子节点
         private HashSet<IClippable> m_ClipTargets = new HashSet<IClippable>();
 
         [NonSerialized]
+        //是否需要重新计算裁切区域
         private bool m_ShouldRecalculateClipRects;
 
         [NonSerialized]
+        //用来存储该元素所有的RectMask2D上级、包含自己，每次需要重新计算裁切区域时，该List会重新被赋值
         private List<RectMask2D> m_Clippers = new List<RectMask2D>();
 
         [NonSerialized]
+        //上次裁切区域的缓存，用来减少一些计算
         private Rect m_LastClipRectCanvasSpace;
         [NonSerialized]
         private bool m_ForceClip;
@@ -54,6 +61,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Padding to be applied to the masking
+        /// Rect内部边框，相当于在不改变RectMask2D的Trs大小的情况下，动态缩放Mask区域。
+        /// 比如如果 X = 100，那么原本子元素在到达父节点左边界时才会Mask，现在距离左边界100距离就会被Mask
+        /// 
         /// X = Left
         /// Y = Bottom
         /// Z = Right
@@ -70,10 +80,15 @@ namespace UnityEngine.UI
         }
 
         [SerializeField]
+        //边界的柔和程度
+        //边界外还是直接Mask的，只是边界内部进行柔和
+        //通过softness，设置的时候会强制限制为非负值
         private Vector2Int m_Softness;
 
         /// <summary>
         /// The softness to apply to the horizontal and vertical axis.
+        /// 边界的柔和程度
+        /// 设置的时候会强制限制为非负值
         /// </summary>
         public Vector2Int softness
         {
@@ -88,6 +103,7 @@ namespace UnityEngine.UI
 
         /// <remarks>
         /// Returns a non-destroyed instance or a null reference.
+        /// 最外层的RootCanvas节点，必须是Active的
         /// </remarks>
         [NonSerialized] private Canvas m_Canvas;
         internal Canvas Canvas
@@ -111,6 +127,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Get the Rect for the mask in canvas space.
+        /// 获取本Trs在Canvas中的相对矩形区域
         /// </summary>
         public Rect canvasRect
         {
@@ -135,7 +152,9 @@ namespace UnityEngine.UI
         {
             base.OnEnable();
             m_ShouldRecalculateClipRects = true;
+            //注册到裁剪中心
             ClipperRegistry.Register(this);
+            //发送裁剪状态变化通知
             MaskUtilities.Notify2DMaskStateChanged(this);
         }
 
@@ -177,16 +196,25 @@ namespace UnityEngine.UI
 
 #endif
 
+        /// <summary>
+        /// 射线是否能打到该元素上
+        /// </summary>
+        /// <param name="sp"></param>
+        /// <param name="eventCamera"></param>
+        /// <returns></returns>
         public virtual bool IsRaycastLocationValid(Vector2 sp, Camera eventCamera)
         {
             if (!isActiveAndEnabled)
                 return true;
 
+            //判断射线是否能够打到元素上，把padding信息穿进去当做offset，也就是说padding之外的不但会被裁剪、也会被射线无视
             return RectTransformUtility.RectangleContainsScreenPoint(rectTransform, sp, eventCamera, m_Padding);
         }
 
+        //用来存储该元素在根Canvas中的4个角的本地坐标
         private Vector3[] m_Corners = new Vector3[4];
 
+        //该元素在根Canvas中的Rect区域，是个本地坐标的Rect
         private Rect rootCanvasRect
         {
             get
@@ -204,8 +232,12 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 裁切，实际执行裁切的方法
+        /// </summary>
         public virtual void PerformClipping()
         {
+            //没有Canvas的元素不裁切
             if (ReferenceEquals(Canvas, null))
             {
                 return;
@@ -216,24 +248,31 @@ namespace UnityEngine.UI
             // if the parents are changed
             // or something similar we
             // do a recalculate here
+            //重新计算裁切区域
             if (m_ShouldRecalculateClipRects)
             {
+                //找出所有本RectMask2D、以及它所有的上级RectMask2D，除去Canvas是OverrideSorting的
                 MaskUtilities.GetRectMasksForClip(this, m_Clippers);
                 m_ShouldRecalculateClipRects = false;
             }
 
             // get the compound rects from
             // the clippers that are valid
+            //计算所有RectMask2D都重叠的区域
             bool validRect = true;
             Rect clipRect = Clipping.FindCullAndClipWorldRect(m_Clippers, out validRect);
 
             // If the mask is in ScreenSpaceOverlay/Camera render mode, its content is only rendered when its rect
             // overlaps that of the root canvas.
+            //是否要进行剔除，也就是完全不渲染了
+            //只有当Canvas的渲染模式是Camera/Overlay、并且裁切区域和根Canvas没有交集的时候才会被剔除掉
+            //如果Canvas是WorldSpace，那么不会剔除掉
             RenderMode renderMode = Canvas.rootCanvas.renderMode;
             bool maskIsCulled =
                 (renderMode == RenderMode.ScreenSpaceCamera || renderMode == RenderMode.ScreenSpaceOverlay) &&
                 !clipRect.Overlaps(rootCanvasRect, true);
 
+            //如果该元素需要被剔除掉，那么clipRect区域大小置为0、validRect置为false
             if (maskIsCulled)
             {
                 // Children are only displayed when inside the mask. If the mask is culled, then the children
@@ -243,19 +282,21 @@ namespace UnityEngine.UI
                 validRect = false;
             }
 
+            //如果裁切区域有变更
             if (clipRect != m_LastClipRectCanvasSpace)
             {
                 foreach (IClippable clipTarget in m_ClipTargets)
                 {
                     clipTarget.SetClipRect(clipRect, validRect);
                 }
-
+                //MaskableGraphic 还要进行剔除
                 foreach (MaskableGraphic maskableTarget in m_MaskableTargets)
                 {
                     maskableTarget.SetClipRect(clipRect, validRect);
                     maskableTarget.Cull(clipRect, validRect);
                 }
             }
+            //或者强制裁切
             else if (m_ForceClip)
             {
                 foreach (IClippable clipTarget in m_ClipTargets)
@@ -263,14 +304,17 @@ namespace UnityEngine.UI
                     clipTarget.SetClipRect(clipRect, validRect);
                 }
 
+                //MaskableGraphic 还要进行剔除
                 foreach (MaskableGraphic maskableTarget in m_MaskableTargets)
                 {
                     maskableTarget.SetClipRect(clipRect, validRect);
 
+                    //只有元素发生了变更导致几何图形位置发生变更，才会执行剔除操作
                     if (maskableTarget.canvasRenderer.hasMoved)
                         maskableTarget.Cull(clipRect, validRect);
                 }
             }
+            //否则，只进行剔除设置
             else
             {
                 foreach (MaskableGraphic maskableTarget in m_MaskableTargets)
@@ -286,6 +330,10 @@ namespace UnityEngine.UI
             UpdateClipSoftness();
         }
 
+        /// <summary>
+        /// 更新裁切边缘柔和度
+        /// 在处理裁切后被调用
+        /// </summary>
         public virtual void UpdateClipSoftness()
         {
             if (ReferenceEquals(Canvas, null))
