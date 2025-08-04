@@ -354,15 +354,19 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Add a IClippable to be tracked by the mask.
+        /// 子节点主动调用
+        /// 在子节点找到父节点RectMask2D之后，将自己加入到父节点的裁剪管理中
         /// </summary>
         /// <param name="clippable">Add the clippable object for this mask</param>
         public void AddClippable(IClippable clippable)
         {
             if (clippable == null)
                 return;
+            //每有一个子节点加入，都需要重新计算裁切
             m_ShouldRecalculateClipRects = true;
             MaskableGraphic maskable = clippable as MaskableGraphic;
 
+            //根据子节点是不是MaskableGraphic，决定加到哪个队列中
             if (maskable == null)
                 m_ClipTargets.Add(clippable);
             else
@@ -373,6 +377,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Remove an IClippable from being tracked by the mask.
+        /// 子节点主动调用
+        /// 当子节点切换父节点、或者父节点失效等，子节点把自己从父节点的裁切中拿出来
         /// </summary>
         /// <param name="clippable">Remove the clippable object from this mask</param>
         public void RemoveClippable(IClippable clippable)
