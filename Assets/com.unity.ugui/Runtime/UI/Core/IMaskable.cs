@@ -4,7 +4,7 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// This element is capable of being masked out.
-    /// 遮罩接口
+    /// Mask接口
     /// 通过模板测试，重新生成材质，实现对元素的遮罩效果
     /// </summary>
     public interface IMaskable

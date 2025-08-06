@@ -14,6 +14,7 @@ namespace UnityEngine.UI
     /// 矩形区域裁剪接口
     /// 不是通过模板测试，而是通过设置矩形区域，然后超出区域外的元素透明度设置为0.
     /// 然后shader会丢弃透明度小于0.001的片元，从而实现遮罩效果
+    /// 所以该组件不影响材质
     /// </summary>
     /// <remarks>
     /// The RectMask2D behaves in a similar way to a standard Mask component. It differs though in some of the restrictions that it has.
@@ -401,6 +402,7 @@ namespace UnityEngine.UI
 
         protected override void OnTransformParentChanged()
         {
+            //父节点变更，重置m_Canvas，每次通过Canvas变量获取根节点Canvas的时候，都会对m_Canvas重新赋值
             m_Canvas = null;
             base.OnTransformParentChanged();
             m_ShouldRecalculateClipRects = true;
@@ -408,6 +410,7 @@ namespace UnityEngine.UI
 
         protected override void OnCanvasHierarchyChanged()
         {
+            //父节点变更，重置m_Canvas，每次通过Canvas变量获取根节点Canvas的时候，都会对m_Canvas重新赋值
             m_Canvas = null;
             base.OnCanvasHierarchyChanged();
             m_ShouldRecalculateClipRects = true;

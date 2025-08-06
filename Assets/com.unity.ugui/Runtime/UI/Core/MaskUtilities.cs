@@ -31,6 +31,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Notify all IMaskable under the given component that they need to recalculate masking.
+        /// 通知所有可Mask的子组件，进行Mask重新计算
         /// </summary>
         /// <param name="mask">The object thats changed for whose children should be notified.</param>
         public static void NotifyStencilStateChanged(Component mask)

@@ -17,7 +17,7 @@ namespace UnityEngine.UI
         protected bool m_ShouldRecalculateStencil = true;
 
         [NonSerialized]
-        //经过模板遮罩处理的后的材质
+        //经过模板遮罩处理的后的材质-Mask组件使用
         protected Material m_MaskMaterial;
 
         [NonSerialized]
