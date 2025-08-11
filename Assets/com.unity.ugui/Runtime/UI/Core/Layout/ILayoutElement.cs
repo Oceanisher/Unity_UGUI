@@ -5,6 +5,10 @@ namespace UnityEngine.UI
 {
     /// <summary>
     ///   A component is treated as a layout element by the auto layout system if it implements ILayoutElement.
+    /// 布局元素
+    /// 实现此接口的图形元素能够被自动布局管理系统进行管理，并且能够通过该接口实现一些自定义的布局策略。
+    /// 布局管理系统通过调用 CalculateLayoutInputHorizontal 、CalculateLayoutInputVertical接口来进行布局计算。
+    /// 部分UI元素实现的该接口，比如Image。但是Button没有实现。
     /// </summary>
     /// <remarks>
     /// The layout system will invoke CalculateLayoutInputHorizontal before querying minWidth, preferredWidth, and flexibleWidth. It can potentially save performance if these properties are cached when CalculateLayoutInputHorizontal is invoked, so they don't need to be recalculated every time the properties are queried.
@@ -18,23 +22,27 @@ namespace UnityEngine.UI
     public interface ILayoutElement
     {
         /// <summary>
+        /// 计算水平布局数据
         /// After this method is invoked, layout horizontal input properties should return up-to-date values.
         ///  Children will already have up-to-date layout horizontal inputs when this methods is called.
         /// </summary>
         void CalculateLayoutInputHorizontal();
 
         /// <summary>
+        /// 计算竖直布局数据
         ///After this method is invoked, layout vertical input properties should return up-to-date values.
         ///Children will already have up-to-date layout vertical inputs when this methods is called.
         /// </summary>
         void CalculateLayoutInputVertical();
 
         /// <summary>
+        /// 最小宽度
         /// The minimum width this layout element may be allocated.
         /// </summary>
         float minWidth { get; }
 
         /// <summary>
+        /// 最佳宽度
         /// The preferred width this layout element should be allocated if there is sufficient space.
         /// </summary>
         /// <remarks>
@@ -43,6 +51,9 @@ namespace UnityEngine.UI
         float preferredWidth { get; }
 
         /// <summary>
+        /// 灵活宽度
+        /// 在父空间有剩余空间时使用，它是最终是一个百分比。也就是说，当父空间有剩余空间时，按照灵活宽度的比例，将剩余空间分配给该元素
+        /// 设置为-1，则取消该值的使用
         /// The extra relative width this layout element should be allocated if there is additional available space.
         /// </summary>
         /// <remarks>
@@ -79,11 +90,13 @@ namespace UnityEngine.UI
         float flexibleWidth { get; }
 
         /// <summary>
+        /// 最小高度
         /// The minimum height this layout element may be allocated.
         /// </summary>
         float minHeight { get; }
 
         /// <summary>
+        /// 最佳高度
         /// The preferred height this layout element should be allocated if there is sufficient space.
         /// </summary>
         /// <remarks>
@@ -92,7 +105,10 @@ namespace UnityEngine.UI
         float preferredHeight { get; }
 
         /// <summary>
+        /// 灵活高度
         /// The extra relative height this layout element should be allocated if there is additional available space.
+        /// 在父空间有剩余空间时使用，它是最终是一个百分比。也就是说，当父空间有剩余空间时，按照灵活高度的比例，将剩余空间分配给该元素
+        /// 设置为-1，则取消该值的使用
         /// </summary>
         ///<example>
         ///<code>
@@ -124,6 +140,7 @@ namespace UnityEngine.UI
         float flexibleHeight { get; }
 
         /// <summary>
+        /// 在布局中该元素的优先级
         /// The layout priority of this component.
         /// </summary>
         /// <remarks>
@@ -134,6 +151,10 @@ namespace UnityEngine.UI
 
     /// <summary>
     /// Base interface to be implemented by components that control the layout of RectTransforms.
+    /// 布局控制器基础接口
+    ///
+    /// 如果一个布局控制器能够控制它自己的Trs，那么需要实现 ILayoutSelfController 接口
+    /// 如果一个布局控制器能够控制它子节点的Trs，那么需要实现 ILayoutGroup 接口
     /// </summary>
     /// <remarks>
     /// If a component is driving its own RectTransform it should implement the interface [[ILayoutSelfController]].
@@ -150,17 +171,20 @@ namespace UnityEngine.UI
     {
         /// <summary>
         /// Callback invoked by the auto layout system which handles horizontal aspects of the layout.
+        /// 布局控制器设置水平方向的布局，先被调用
         /// </summary>
         void SetLayoutHorizontal();
 
         /// <summary>
         /// Callback invoked by the auto layout system which handles vertical aspects of the layout.
+        /// 布局控制器设置竖直方向的布局，后被调用
         /// </summary>
         void SetLayoutVertical();
     }
 
     /// <summary>
     /// ILayoutGroup is an ILayoutController that should drive the RectTransforms of its children.
+    /// 布局控制器-控制所有子节点的Trs
     /// </summary>
     /// <remarks>
     /// ILayoutGroup derives from ILayoutController and requires the same members to be implemented.
@@ -171,6 +195,7 @@ namespace UnityEngine.UI
 
     /// <summary>
     /// ILayoutSelfController is an ILayoutController that should drive its own RectTransform.
+    /// 布局控制器-控制自我节点的Trs
     /// </summary>
     /// <remarks>
     /// The iLayoutSelfController derives from the base controller [[ILayoutController]] and controls the layout of a RectTransform.
@@ -251,6 +276,8 @@ namespace UnityEngine.UI
 
     /// <summary>
     /// A RectTransform will be ignored by the layout system if it has a component which implements ILayoutIgnorer.
+    /// 布局忽略控制器
+    /// 实现此接口可以设置是否要忽略布局对于元素的调整
     /// </summary>
     /// <remarks>
     /// A components that implements ILayoutIgnorer can be used to make a parent layout group component not consider this RectTransform part of the group. The RectTransform can then be manually positioned despite being a child GameObject of a layout group.
@@ -259,6 +286,7 @@ namespace UnityEngine.UI
     {
         /// <summary>
         /// Should this RectTransform be ignored bvy the layout system?
+        /// 是否要忽略父节点的布局控制器
         /// </summary>
         /// <remarks>
         /// Setting this property to true will make a parent layout group component not consider this RectTransform part of the group. The RectTransform can then be manually positioned despite being a child GameObject of a layout group.

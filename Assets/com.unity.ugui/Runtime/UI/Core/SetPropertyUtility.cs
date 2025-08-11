@@ -25,8 +25,19 @@ namespace UnityEngine.UI
             return true;
         }
 
+        /// <summary>
+        /// 设置ref变量
+        /// 主要是用于返回新老值是否一样，便于后面的调用
+        /// </summary>
+        /// <param name="currentValue"></param>
+        /// <param name="newValue"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public static bool SetStruct<T>(ref T currentValue, T newValue) where T : struct
         {
+            //使用 EqualityComparer 进行判断
+            //当T是引用类型，会使用Object.Equals()进行判断
+            //当T是值类型，会使用EqualityComparer.Default进行判断
             if (EqualityComparer<T>.Default.Equals(currentValue, newValue))
                 return false;
 

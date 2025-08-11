@@ -7,6 +7,9 @@ namespace UnityEngine.UI
     [ExecuteAlways]
     /// <summary>
     /// Add this component to a GameObject to make it into a layout element or override values on an existing layout element.
+    /// ILayoutElement 实现类
+    /// 可以挂在布局下的子元素上，从而实现子元素一些宽高的自定义
+    /// 也实现了ILayoutIgnorer接口，能够让子元素自己选择是否接受父节点布局的管理
     /// </summary>
     public class LayoutElement : UIBehaviour, ILayoutElement, ILayoutIgnorer
     {
@@ -21,6 +24,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Should this RectTransform be ignored by the layout system?
+        /// 是否要忽略父节点的布局控制器
         /// </summary>
         /// <remarks>
         /// Setting this property to true will make a parent layout group component not consider this RectTransform part of the group. The RectTransform can then be manually positioned despite being a child GameObject of a layout group.
@@ -206,6 +210,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Mark the LayoutElement as dirty.
+        /// 将该元素标记为Dirty，然后注册到布局中，在下一帧进行布局重建
         /// </summary>
         /// <remarks>
         /// This will make the auto layout system process this element on the next layout pass. This method should be called by the LayoutElement whenever a change is made that potentially affects the layout.
