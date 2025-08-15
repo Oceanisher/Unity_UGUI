@@ -18,16 +18,19 @@ namespace UnityEngine.UI
     [AddComponentMenu("UI/Image", 11)]
     /// <summary>
     ///   Displays a Sprite inside the UI System.
+    /// 图片组件，用于展示精灵Sprite
     /// </summary>
     public class Image : MaskableGraphic, ISerializationCallbackReceiver, ILayoutElement, ICanvasRaycastFilter
     {
         /// <summary>
         /// Image fill type controls how to display the image.
+        /// 图片组件填充类型
         /// </summary>
         public enum Type
         {
             /// <summary>
             /// Displays the full Image
+            /// 简单模式，填充图片到整个RectTransform
             /// </summary>
             /// <remarks>
             /// This setting shows the entire image stretched across the Image's RectTransform
@@ -36,6 +39,8 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// Displays the Image as a 9-sliced graphic.
+            /// 九宫模式，展示九宫图片
+            /// Sprite必须有Border配置，否则不生效
             /// </summary>
             /// <remarks>
             /// A 9-sliced image displays a central area stretched across the image surrounded by a border comprising of 4 corners and 4 stretched edges.
@@ -48,6 +53,11 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// Displays a sliced Sprite with its resizable sections tiled instead of stretched.
+            /// 平铺模式
+            /// 也是用Sprite的Border属性，来决定边界和中心如何进行平铺
+            /// 如果使用带Border或者压缩的sprite，会生成新的Mesh
+            /// 所以基于性能的考虑，最好使用没有Border、不压缩的Sprite，并且把Sprite.texture的wrap mode设置为TextureWrapMode.Repeat，这样能避免生成新的Mesh。
+            /// 如果实在没办法，那么要注意生成的Tile的数量。
             /// </summary>
             /// <remarks>
             /// A Tiled image behaves similarly to a UI.Image.Type.Sliced|Sliced image, except that the resizable sections of the image are repeated instead of being stretched. This can be useful for detailed UI graphics that do not look good when stretched.
@@ -66,6 +76,9 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// Displays only a portion of the Image.
+            /// 部分模式
+            /// 用于控制展示图片的一部分，可以当做圆形进度条使用。
+            /// 用FillMethod、FillAmount去控制展示的方式和进度
             /// </summary>
             /// <remarks>
             /// A Filled Image will display a section of the Sprite, with the rest of the RectTransform left transparent. The Image.fillAmount determines how much of the Image to show, and Image.fillMethod controls the shape in which the Image will be cut.
@@ -77,11 +90,14 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The possible fill method types for a Filled Image.
+        /// 当Image的填充模式设置为Filled时，可以选择的填充方式
         /// </summary>
         public enum FillMethod
         {
             /// <summary>
             /// The Image will be filled Horizontally.
+            /// 水平填充
+            /// 像普通水平进度条一样进行填充
             /// </summary>
             /// <remarks>
             /// The Image will be Cropped at either left or right size depending on Image.fillOriging at the Image.fillAmount
@@ -90,6 +106,7 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// The Image will be filled Vertically.
+            /// 竖直填充
             /// </summary>
             /// <remarks>
             /// The Image will be Cropped at either top or Bottom size depending on Image.fillOrigin at the Image.fillAmount
@@ -98,6 +115,7 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// The Image will be filled Radially with the radial center in one of the corners.
+            /// 90度扇形填充
             /// </summary>
             /// <remarks>
             /// For this method the Image.fillAmount represents an angle between 0 and 90 degrees. The Image will be cut by a line passing at the Image.fillOrigin at the specified angle.
@@ -106,6 +124,7 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// The Image will be filled Radially with the radial center in one of the edges.
+            /// 180度扇形填充
             /// </summary>
             /// <remarks>
             /// For this method the Image.fillAmount represents an angle between 0 and 180 degrees. The Image will be cut by a line passing at the Image.fillOrigin at the specified angle.
@@ -114,6 +133,7 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// The Image will be filled Radially with the radial center at the center.
+            /// 360度环形填充
             /// </summary>
             /// <remarks>
             /// or this method the Image.fillAmount represents an angle between 0 and 360 degrees. The Arc defined by the center of the Image, the Image.fillOrigin and the angle will be cut from the Image.
@@ -123,6 +143,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Origin for the Image.FillMethod.Horizontal.
+        /// 水平填充时的起始位置
         /// </summary>
         public enum OriginHorizontal
         {
@@ -140,6 +161,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Origin for the Image.FillMethod.Vertical.
+        /// 竖直填充时的起始位置
         /// </summary>
         public enum OriginVertical
         {
@@ -156,6 +178,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Origin for the Image.FillMethod.Radial90.
+        /// 90度扇形填充时的起始位置
         /// </summary>
         public enum Origin90
         {
@@ -182,6 +205,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Origin for the Image.FillMethod.Radial180.
+        /// 180度扇形填充时的起始位置
         /// </summary>
         public enum Origin180
         {
@@ -208,6 +232,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// One of the points of the Arc for the Image.FillMethod.Radial360.
+        /// 360度环形填充时的起始位置
         /// </summary>
         public enum Origin360
         {
@@ -234,6 +259,7 @@ namespace UnityEngine.UI
 
         static protected Material s_ETC1DefaultUI = null;
 
+        //使用的精灵，用于渲染
         [FormerlySerializedAs("m_Frame")]
         [SerializeField]
         private Sprite m_Sprite;
@@ -278,37 +304,51 @@ namespace UnityEngine.UI
         ///</code>
         /// </example>
 
+        //精灵
         public Sprite sprite
         {
             get { return m_Sprite; }
             set
             {
+                //如果当前有精灵了
                 if (m_Sprite != null)
                 {
                     if (m_Sprite != value)
                     {
+                        //当新旧精灵尺寸不一样的时候，才会触发布局重建
                         m_SkipLayoutUpdate = m_Sprite.rect.size.Equals(value ? value.rect.size : Vector2.zero);
+                        //当新旧精灵纹理不一样的时候，才会触发图形重建
                         m_SkipMaterialUpdate = m_Sprite.texture == (value ? value.texture : null);
                         m_Sprite = value;
 
+                        //重置Alpha检测阈值
                         ResetAlphaHitThresholdIfNeeded();
+                        //设置全部Dirty
                         SetAllDirty();
                         TrackSprite();
                     }
                 }
+                //如果当前没有精灵、且新的精灵不为空，才会进行设置
                 else if (value != null)
                 {
+                    //如果新的精灵尺寸为0，那么跳过布局重建
                     m_SkipLayoutUpdate = value.rect.size == Vector2.zero;
+                    //如果精灵的纹理为空，那么跳过图形重建
                     m_SkipMaterialUpdate = value.texture == null;
                     m_Sprite = value;
 
+                    //重置Alpha检测阈值
                     ResetAlphaHitThresholdIfNeeded();
+                    //设置全部Dirty
                     SetAllDirty();
                     TrackSprite();
                 }
 
+                //重置Alpha点击测试阈值
                 void ResetAlphaHitThresholdIfNeeded()
                 {
+                    //如果Sprite不支持Alpha点击检测，并且当前阈值大于0，那么重置阈值为0
+                    //也就是说所有透明度大于0的地方都能被点击检测
                     if (!SpriteSupportsAlphaHitTest() && m_AlphaHitTestMinimumThreshold > 0)
                     {
                         Debug.LogWarning("Sprite was changed for one not readable or with Crunch Compression. Resetting the AlphaHitThreshold to 0.", this);
@@ -316,6 +356,9 @@ namespace UnityEngine.UI
                     }
                 }
 
+                //精灵是否支持Alpha点击检测
+                //如果想要实现非矩形的、不规则的点击区域，那么精灵需要能够支持Alpha检测
+                //条件：精灵开启Read/Write选项，并且Format压缩格式不是Crunch
                 bool SpriteSupportsAlphaHitTest()
                 {
                     return m_Sprite != null && m_Sprite.texture != null && !GraphicsFormatUtility.IsCrunchFormat(m_Sprite.texture.format) && m_Sprite.texture.isReadable;
@@ -326,6 +369,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Disable all automatic sprite optimizations.
+        /// 禁用精灵的自动优化
+        /// 其实就是跳过布局、图形重建
         /// </summary>
         /// <remarks>
         /// When a new Sprite is assigned update optimizations are automatically applied.
@@ -337,11 +382,14 @@ namespace UnityEngine.UI
             m_SkipMaterialUpdate = false;
         }
 
+        //覆盖的Sprite
         [NonSerialized]
         private Sprite m_OverrideSprite;
 
         /// <summary>
         /// Set an override sprite to be used for rendering.
+        /// 覆盖的Sprite，当不为空时，优先渲染覆盖的精灵；否则渲染原始精灵
+        /// 用于临时性展示其他图片精灵
         /// </summary>
         /// <remarks>
         /// The UI.Image-overrideSprite|overrideSprite variable allows a sprite to have the
@@ -399,6 +447,7 @@ namespace UnityEngine.UI
             get { return activeSprite; }
             set
             {
+                //设置覆盖的精灵，也会导致布局和图形重建
                 if (SetPropertyUtility.SetClass(ref m_OverrideSprite, value))
                 {
                     SetAllDirty();
@@ -407,13 +456,16 @@ namespace UnityEngine.UI
             }
         }
 
+        //当前生效的精灵，优先选择覆盖的精灵
         private Sprite activeSprite { get { return m_OverrideSprite != null ? m_OverrideSprite : sprite; } }
 
         /// How the Image is drawn.
+        /// 图片展示的方式
         [SerializeField] private Type m_Type = Type.Simple;
 
         /// <summary>
         /// How to display the image.
+        /// 图片展示的方式
         /// </summary>
         /// <remarks>
         /// Unity can interpret an Image in various different ways depending on the intended purpose. This can be used to display:
@@ -424,17 +476,23 @@ namespace UnityEngine.UI
         /// </remarks>
         public Type type { get { return m_Type; } set { if (SetPropertyUtility.SetStruct(ref m_Type, value)) SetVerticesDirty(); } }
 
+        //是否要保持精灵的纵横比
         [SerializeField] private bool m_PreserveAspect = false;
 
         /// <summary>
         /// Whether this image should preserve its Sprite aspect ratio.
+        /// 是否要保持精灵的纵横比
         /// </summary>
         public bool preserveAspect { get { return m_PreserveAspect; } set { if (SetPropertyUtility.SetStruct(ref m_PreserveAspect, value)) SetVerticesDirty(); } }
 
+        //九宫或者平铺模式下，是否要绘制精灵的中心部分
+        //Sprite本身必须有Borders才能生效
         [SerializeField] private bool m_FillCenter = true;
 
         /// <summary>
         /// Whether or not to render the center of a Tiled or Sliced image.
+        /// 九宫或者平铺模式下，是否要绘制精灵的中心部分
+        /// Sprite本身必须有Borders才能生效
         /// </summary>
         /// <remarks>
         /// This will only have any effect if the Image.sprite has borders.
@@ -462,16 +520,19 @@ namespace UnityEngine.UI
         public bool fillCenter { get { return m_FillCenter; } set { if (SetPropertyUtility.SetStruct(ref m_FillCenter, value)) SetVerticesDirty(); } }
 
         /// Filling method for filled sprites.
+        /// Filled模式下，具体的Fill方式
         [SerializeField] private FillMethod m_FillMethod = FillMethod.Radial360;
         public FillMethod fillMethod { get { return m_FillMethod; } set { if (SetPropertyUtility.SetStruct(ref m_FillMethod, value)) { SetVerticesDirty(); m_FillOrigin = 0; } } }
 
         /// Amount of the Image shown. 0-1 range with 0 being nothing shown, and 1 being the full Image.
+        //Filled模式下，填充度0~1
         [Range(0, 1)]
         [SerializeField]
         private float m_FillAmount = 1.0f;
 
         /// <summary>
         /// Amount of the Image shown when the Image.type is set to Image.Type.Filled.
+        /// Filled模式下，填充度0~1
         /// </summary>
         /// <remarks>
         /// 0-1 range with 0 being nothing shown, and 1 being the full Image.
@@ -505,10 +566,12 @@ namespace UnityEngine.UI
         public float fillAmount { get { return m_FillAmount; } set { if (SetPropertyUtility.SetStruct(ref m_FillAmount, Mathf.Clamp01(value))) SetVerticesDirty(); } }
 
         /// Whether the Image should be filled clockwise (true) or counter-clockwise (false).
+        /// Filled模式下，从0~1的增长方向，顺时针还是逆时针
         [SerializeField] private bool m_FillClockwise = true;
 
         /// <summary>
         /// Whether the Image should be filled clockwise (true) or counter-clockwise (false).
+        /// Filled模式下，从0~1的增长方向，顺时针还是逆时针
         /// </summary>
         /// <remarks>
         /// This will only have any effect if the Image.type is set to Image.Type.Filled and Image.fillMethod is set to any of the Radial methods.
@@ -544,10 +607,14 @@ namespace UnityEngine.UI
         public bool fillClockwise { get { return m_FillClockwise; } set { if (SetPropertyUtility.SetStruct(ref m_FillClockwise, value)) SetVerticesDirty(); } }
 
         /// Controls the origin point of the Fill process. Value means different things with each fill method.
+        /// Filled模式下，初始方向。根据不同的FilledMethod，这个值不同
+        /// 可以根据不同的方式，映射到不同的枚举 OriginHorizontal、OriginVertical、Origin90、Origin180、Origin360
         [SerializeField] private int m_FillOrigin;
 
         /// <summary>
         /// Controls the origin point of the Fill process. Value means different things with each fill method.
+        /// Filled模式下，初始方向。根据不同的FilledMethod，这个值不同
+        /// 可以根据不同的方式，映射到不同的枚举 OriginHorizontal、OriginVertical、Origin90、Origin180、Origin360
         /// </summary>
         /// <remarks>
         /// You should cast to the appropriate origin type: Image.OriginHorizontal, Image.OriginVertical, Image.Origin90, Image.Origin180 or Image.Origin360 depending on the Image.Fillmethod.
@@ -597,9 +664,11 @@ namespace UnityEngine.UI
         public int fillOrigin { get { return m_FillOrigin; } set { if (SetPropertyUtility.SetStruct(ref m_FillOrigin, value)) SetVerticesDirty(); } }
 
         // Not serialized until we support read-enabled sprites better.
+        //Alpha点击测试的最小阈值
         private float m_AlphaHitTestMinimumThreshold = 0;
 
         // Whether this is being tracked for Atlas Binding.
+        //是否在图集绑定中追踪
         private bool m_Tracked = false;
 
         [Obsolete("eventAlphaThreshold has been deprecated. Use eventMinimumAlphaThreshold instead (UnityUpgradable) -> alphaHitTestMinimumThreshold")]
@@ -612,6 +681,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The alpha threshold specifies the minimum alpha a pixel must have for the event to considered a "hit" on the Image.
+        /// alpha点击时像素可响应的最小Alpha阈值
+        /// 如果像素Alpha小于这个值，那么射线检测将穿透该像素
+        /// 是检测Sprite像素的Alpha，而不是Image组件的Alpha值（UI.Graphic.color）
+        /// Sprite必须开启Read/write，并且不能使用Crunch压缩
         /// </summary>
         /// <remarks>
         /// Alpha values less than the threshold will cause raycast events to pass through the Image. An value of 1 would cause only fully opaque pixels to register raycast events on the Image. The alpha tested is retrieved from the image sprite only, while the alpha of the Image [[UI.Graphic.color]] is disregarded.
@@ -649,10 +722,16 @@ namespace UnityEngine.UI
         }
 
         /// Controls whether or not to use the generated mesh from the sprite importer.
+        /// 是否使用精灵的TextureImporter生成的Mesh，或者仅使用简单QuadMesh
+        /// 如果Sprite导入的方式是Tight、而不是FullRect，那么必须启用该选项，否则可能会渲染到其他Sprite的一部分
+        /// 如果Sprite自身不是Tight的，那么TextureImporter也只会生成一个简单QuadMesh，此时即使启用了该选项，也会被忽略。
         [SerializeField] private bool m_UseSpriteMesh;
 
         /// <summary>
         /// Allows you to specify whether the UI Image should be displayed using the mesh generated by the TextureImporter, or by a simple quad mesh.
+        /// 是否使用精灵的TextureImporter生成的Mesh，或者仅使用简单Quad Mesh
+        /// 如果Sprite导入的方式是Tight、而不是FullRect，那么必须启用该选项，否则可能会渲染到其他Sprite的一部分
+        /// 如果Sprite自身不是Tight的，那么TextureImporter也只会生成一个简单QuadMesh，此时即使启用了该选项，也会被忽略。
         /// </summary>
         /// <remarks>
         /// When this property is set to false, the UI Image uses a simple quad. When set to true, the UI Image uses the sprite mesh generated by the [[TextureImporter]]. You should set this to true if you want to use a tightly fitted sprite mesh based on the alpha values in your image.
@@ -668,6 +747,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Cache of the default Canvas Ericsson Texture Compression 1 (ETC1) and alpha Material.
+        /// 缓存ETC1压缩方式的材质
+        ///
+        /// 确保 UI/DefaultETC1 shader包含在始终包含的Shader列表中，才能确保这里能获取到
+        /// 可以从 Project Settings -> Graphics -> Allways Included Shaders中进行设置
         /// </summary>
         /// <remarks>
         /// Stores the ETC1 supported Canvas Material that is returned from GetETC1SupportedCanvasMaterial().
@@ -685,6 +768,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Image's texture comes from the UnityEngine.Image.
+        /// 主纹理对象
+        ///
+        /// 优先从activeSprite的精灵中获取，再从material中获取主纹理，如果都没有，那么返回UI默认的纯白纹理。
         /// </summary>
         public override Texture mainTexture
         {
@@ -705,6 +791,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Whether the Sprite of the image has a border to work with.
+        /// 当前activeSprite是否有Border、并且Border的四个边框不能都为0
         /// </summary>
 
         public bool hasBorder
@@ -721,11 +808,13 @@ namespace UnityEngine.UI
         }
 
 
+        //展示模式为Sliced平铺模式时，这个值能够决定平铺时的每个图像的缩放，不会为负值
         [SerializeField]
         private float m_PixelsPerUnitMultiplier = 1.0f;
 
         /// <summary>
         /// Pixel per unit modifier to change how sliced sprites are generated.
+        /// 展示模式为Sliced平铺模式时，这个值能够决定平铺时的每个图像的缩放，不会为负值
         /// </summary>
         public float pixelsPerUnitMultiplier
         {
@@ -738,8 +827,14 @@ namespace UnityEngine.UI
         }
 
         // case 1066689 cache referencePixelsPerUnit when canvas parent is disabled;
+        //缓存的Canvas的每单位像素数，默认是100
+        //PPU:多少个像素对应世界中的一个单位长度
         private float m_CachedReferencePixelsPerUnit = 100;
 
+        //计算精灵中的PPU，与Canvas的PPU的比例
+        //默认sprite中的PPU=100，默认Canvas的Scaler中的PPU=100，所以默认情况下这个值=1
+        //越大，可以代表图像越小，因为每个世界单位长度需要更多的像素
+        //越小，可以代表图像越大，因为每个世界单位长度需要更少的像素
         public float pixelsPerUnit
         {
             get
@@ -755,6 +850,7 @@ namespace UnityEngine.UI
             }
         }
 
+        //九宫/平铺模式下的每个图像大小的缩放，百分比
         protected float multipliedPixelsPerUnit
         {
             get { return pixelsPerUnit * m_PixelsPerUnitMultiplier; }
@@ -762,6 +858,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The specified Material used by this Image. The default Material is used instead if one wasn't specified.
+        /// Image使用的材质
+        /// 一般不设置，会直接使用UI的默认材质。如果设置了，那么就使用这个设置的材质。
+        /// 在UI需要置灰或者特殊处理的时候有用，就像overrideSprite一样。
         /// </summary>
         public override Material material
         {
@@ -771,6 +870,8 @@ namespace UnityEngine.UI
                     return m_Material;
 
                 //Edit and Runtime should use Split Alpha Shader if EditorSettings.spritePackerMode = Sprite Atlas V2
+                //编辑器模式下，如果运行或者图集中、并且有Alpha通道纹理，那么默认材质是ETC1的材质。
+                //如果使用ETC1等压格式，UNITY会自动生成包含透明通道的内部纹理
 #if UNITY_EDITOR
                 if ((Application.isPlaying || EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2) &&
                     activeSprite && activeSprite.associatedAlphaSplitTexture != null)
@@ -799,6 +900,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// See ISerializationCallbackReceiver.
+        /// 反序列化之后，防御性的将一些变量的值修正一下
         /// </summary>
         public virtual void OnAfterDeserialize()
         {
@@ -814,17 +916,33 @@ namespace UnityEngine.UI
             m_FillAmount = Mathf.Clamp(m_FillAmount, 0f, 1f);
         }
 
+        /// <summary>
+        /// 根据精灵的原始尺寸，重新计算Rect的大小与位置，让Rect保持跟精灵同样的纵横比
+        /// </summary>
+        /// <param name="rect"></param>
+        /// <param name="spriteSize"></param>
         private void PreserveSpriteAspectRatio(ref Rect rect, Vector2 spriteSize)
         {
+            //计算精灵x与y的长度比例
             var spriteRatio = spriteSize.x / spriteSize.y;
+            //计算当前Rect的x与y的长度比例
             var rectRatio = rect.width / rect.height;
 
+            //如果精灵的比值大于Rect，也就是说精灵比Rect的比例更宽
+            //那么保持Rect的宽度不变、改变Rect的高度值，让Rect保持跟精灵一样的比例
+            //由于Rect的x、y代表该Rect的左上角，x向右是增加、y向下是增加
+            //所以Rect高度改变后，它的y值要移动一下，因为要保持它的质心位置不变
+            //Rect的y值变更的值，跟增加或者减少的高度有关
             if (spriteRatio > rectRatio)
             {
                 var oldHeight = rect.height;
                 rect.height = rect.width * (1.0f / spriteRatio);
+                //Rect的y轴向下是增加
+                //比如Rect的原始y是1.2，高度增加了1，质心是在中心（0.5,0.5），算出来Rect的y需要-0.5、变成0.7
                 rect.y += (oldHeight - rect.height) * rectTransform.pivot.y;
             }
+            //否则，保持Rect的高度不变、改变Rect的宽度
+            //计算方式跟上面一致
             else
             {
                 var oldWidth = rect.width;
@@ -834,28 +952,40 @@ namespace UnityEngine.UI
         }
 
         /// Image's dimensions used for drawing. X = left, Y = bottom, Z = right, W = top.
+        /// 获取需要绘制的区域的尺寸，世界空间尺寸，非像素
         private Vector4 GetDrawingDimensions(bool shouldPreserveAspect)
         {
+            //精灵上下左右裁掉的空白像素大小
             var padding = activeSprite == null ? Vector4.zero : Sprites.DataUtility.GetPadding(activeSprite);
+            //精灵的尺寸
             var size = activeSprite == null ? Vector2.zero : new Vector2(activeSprite.rect.width, activeSprite.rect.height);
 
+            //获取该图形元素的绘制尺寸
             Rect r = GetPixelAdjustedRect();
             // Debug.Log(string.Format("r:{2}, size:{0}, padding:{1}", size, padding, r));
 
+            //对精灵尺寸进行取整
             int spriteW = Mathf.RoundToInt(size.x);
             int spriteH = Mathf.RoundToInt(size.y);
 
+            //精灵padding各部分的比例值
+            //x：精灵padding的左边，占精灵尺寸宽度的百分比
+            //y：精灵padding的下边，占精灵尺寸高度的百分比
+            //z：精灵尺寸减去padding的右边，占精灵尺寸宽度的百分比
+            //w：精灵尺寸减去padding的上边，占精灵尺寸高度的百分比
             var v = new Vector4(
                 padding.x / spriteW,
                 padding.y / spriteH,
                 (spriteW - padding.z) / spriteW,
                 (spriteH - padding.w) / spriteH);
 
+            //如果是需要保持精灵的纵横比、并且精灵尺寸不为0，那么重新计算下该元素的绘制尺寸
             if (shouldPreserveAspect && size.sqrMagnitude > 0.0f)
             {
                 PreserveSpriteAspectRatio(ref r, size);
             }
 
+            //最终的绘制区域，需要在原有的绘制区域上、裁去padding部分
             v = new Vector4(
                 r.x + r.width * v.x,
                 r.y + r.height * v.y,
@@ -868,6 +998,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Adjusts the image size to make it pixel-perfect.
+        /// 调整组件大小，让其能够像素完美匹配精灵的尺寸
+        /// 实际是调整RectTransform.sizeDelta为精灵的尺寸
+        ///
+        /// 目前是编辑器下调用
         /// </summary>
         /// <remarks>
         /// This means setting the Images RectTransform.sizeDelta to be equal to the Sprite dimensions.
@@ -886,9 +1020,12 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Update the UI renderer mesh.
+        /// 真正构建网格的地方
+        /// 根据不同的Image类型、填充方式等进行不同的网格构建
         /// </summary>
         protected override void OnPopulateMesh(VertexHelper toFill)
         {
+            //如果没有精灵，那么走父类Graphic的Mesh构建
             if (activeSprite == null)
             {
                 base.OnPopulateMesh(toFill);
@@ -982,14 +1119,23 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Generate vertices for a simple Image.
+        /// Simple模式下，不使用精灵自己的Mesh，生成Quad网格（2个三角形）
+        ///
+        /// 处理方式与Graphic的OnPopulateMesh基本一致
         /// </summary>
         void GenerateSimpleSprite(VertexHelper vh, bool lPreserveAspect)
         {
             Vector4 v = GetDrawingDimensions(lPreserveAspect);
+            //获取精灵的UV
+            //innerUV与outerUV是与Sprite的九宫切图相关的
+            //九宫切图中，outerUV代表了整个完整矩形区域，innerUV代表中心区域的UV
+            //如果sprite本身不是九宫，那么innerUV和outerUV就都是(0,0,1,1)，也就是整个精灵区域
             var uv = (activeSprite != null) ? Sprites.DataUtility.GetOuterUV(activeSprite) : Vector4.zero;
 
             var color32 = color;
+            //VertexHelper使用前要进行清理
             vh.Clear();
+            //4个顶点的UV跟整个精灵对应，从而能渲染整个精灵
             vh.AddVert(new Vector3(v.x, v.y), color32, new Vector2(uv.x, uv.y));
             vh.AddVert(new Vector3(v.x, v.w), color32, new Vector2(uv.x, uv.w));
             vh.AddVert(new Vector3(v.z, v.w), color32, new Vector2(uv.z, uv.w));
@@ -999,36 +1145,50 @@ namespace UnityEngine.UI
             vh.AddTriangle(2, 3, 0);
         }
 
+        /// <summary>
+        /// 使用精灵自身的Mesh来生成网格
+        /// </summary>
+        /// <param name="vh"></param>
+        /// <param name="lPreserveAspect"></param>
         private void GenerateSprite(VertexHelper vh, bool lPreserveAspect)
         {
+            //精灵自身的尺寸
             var spriteSize = new Vector2(activeSprite.rect.width, activeSprite.rect.height);
 
             // Covert sprite pivot into normalized space.
+            //sprite.pivot是个像素值，而不是个百分比，所以需要除以精灵本身的尺寸，换算成归一化的百分比
             var spritePivot = activeSprite.pivot / spriteSize;
             var rectPivot = rectTransform.pivot;
             Rect r = GetPixelAdjustedRect();
 
+            //获得最终要绘制的区域
             if (lPreserveAspect & spriteSize.sqrMagnitude > 0.0f)
             {
                 PreserveSpriteAspectRatio(ref r, spriteSize);
             }
 
             var drawingSize = new Vector2(r.width, r.height);
+            //精灵的Bounds尺寸，使用的是世界空间单位，不是像素值
             var spriteBoundSize = activeSprite.bounds.size;
 
             // Calculate the drawing offset based on the difference between the two pivots.
+            //计算绘制精灵时的偏移值，因为RectTransform的质心、精灵的质心可能不一致，所以通过计算两者的质心差值*绘制尺寸，就能计算出偏移值
             var drawOffset = (rectPivot - spritePivot) * drawingSize;
 
             var color32 = color;
+            //VertexHelper使用前要进行清理
             vh.Clear();
 
+            //使用精灵自身的顶点和UV
             Vector2[] vertices = activeSprite.vertices;
             Vector2[] uvs = activeSprite.uv;
             for (int i = 0; i < vertices.Length; ++i)
             {
+                //真正的顶点位置是：精灵的顶点位置 / 精灵世界空间尺寸 * 实际绘制尺寸 - 偏移值，其实就是根据实际绘制的大小把顶点进行缩放，然后再根据偏移值进行位移
                 vh.AddVert(new Vector3((vertices[i].x / spriteBoundSize.x) * drawingSize.x - drawOffset.x, (vertices[i].y / spriteBoundSize.y) * drawingSize.y - drawOffset.y), color32, new Vector2(uvs[i].x, uvs[i].y));
             }
 
+            //使用精灵自身的顶点环绕
             UInt16[] triangles = activeSprite.triangles;
             for (int i = 0; i < triangles.Length; i += 3)
             {
@@ -1036,20 +1196,30 @@ namespace UnityEngine.UI
             }
         }
 
+        //Sliced模式下的顶点处理流程的临时数组，减少GC
         static readonly Vector2[] s_VertScratch = new Vector2[4];
+        //Sliced模式下的UV处理流程的临时数组，减少GC
         static readonly Vector2[] s_UVScratch = new Vector2[4];
 
         /// <summary>
         /// Generate vertices for a 9-sliced Image.
+        /// 九宫精灵绘制
+        /// 大致过程其实就是九宫的每个宫都各自生成一个Quad
         /// </summary>
         private void GenerateSlicedSprite(VertexHelper toFill)
         {
+            //如果没有切九宫，那么就使用简单绘制
             if (!hasBorder)
             {
                 GenerateSimpleSprite(toFill, false);
                 return;
             }
 
+            //获取外层UV、中心区域UV、padding、border
+            //outer:外层UV，通常是（0,0,1,1）
+            //inner:九宫的中心区域UV
+            //padding:九宫下padding没有设置的地方，目前是（0,0,0,0）
+            //border:左下右上像素值（85,90,82,212），对应sprite Editor窗口下的Border值
             Vector4 outer, inner, padding, border;
 
             if (activeSprite != null)
@@ -1067,26 +1237,34 @@ namespace UnityEngine.UI
                 border = Vector4.zero;
             }
 
+            //由于Rect可能会进行像素对齐，所以要根据像素对齐后的Rect，调整Border大小
             Rect rect = GetPixelAdjustedRect();
 
             Vector4 adjustedBorders = GetAdjustedBorders(border / multipliedPixelsPerUnit, rect);
             padding = padding / multipliedPixelsPerUnit;
 
+            //工具顶点计算，其实是计算内外边框的顶点，0/3是外边框，1/2是内边框，这样正好是按照从左下到右上的4个顶点顺序0/1/2/3
+            //0/3：存储去除padding后的左下、右上顶点位置（相对Rect的位置）
             s_VertScratch[0] = new Vector2(padding.x, padding.y);
             s_VertScratch[3] = new Vector2(rect.width - padding.z, rect.height - padding.w);
 
+            //1/2：去除Border后的顶点左下、右上位置（相对Rect的位置）
             s_VertScratch[1].x = adjustedBorders.x;
             s_VertScratch[1].y = adjustedBorders.y;
 
             s_VertScratch[2].x = rect.width - adjustedBorders.z;
             s_VertScratch[2].y = rect.height - adjustedBorders.w;
 
+            //上面计算的4个坐标都是相对Rect的坐标，每个坐标加上Rect自身的坐标，就是相对于Rect的父节点的相对坐标
             for (int i = 0; i < 4; ++i)
             {
                 s_VertScratch[i].x += rect.x;
                 s_VertScratch[i].y += rect.y;
             }
 
+            //工具UV计算
+            //0/3，最外层左下、右上的UV
+            //1/2，中心区域的左下、右上UV
             s_UVScratch[0] = new Vector2(outer.x, outer.y);
             s_UVScratch[1] = new Vector2(inner.x, inner.y);
             s_UVScratch[2] = new Vector2(inner.z, inner.w);
@@ -1094,21 +1272,25 @@ namespace UnityEngine.UI
 
             toFill.Clear();
 
+            //绘制9个Quad，就是九宫的每个方块都各自绘制一个Quad
             for (int x = 0; x < 3; ++x)
             {
                 int x2 = x + 1;
 
                 for (int y = 0; y < 3; ++y)
                 {
+                    //如果不绘制中心，那么会跳过中心Quad绘制
                     if (!m_FillCenter && x == 1 && y == 1)
                         continue;
 
                     int y2 = y + 1;
 
                     // Check for zero or negative dimensions to prevent invalid quads (UUM-71372)
+                    //如果该Quad面积是0，或者是反面的，那么不进行绘制
                     if ((s_VertScratch[x2].x - s_VertScratch[x].x <= 0) || (s_VertScratch[y2].y - s_VertScratch[y].y <= 0))
                         continue;
 
+                    //把Quad的左下、右上两个顶点，还有对应的两个UV传进去，生成Quad
                     AddQuad(toFill,
                         new Vector2(s_VertScratch[x].x, s_VertScratch[y].y),
                         new Vector2(s_VertScratch[x2].x, s_VertScratch[y2].y),
@@ -1121,18 +1303,23 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Generate vertices for a tiled Image.
+        /// 平铺精灵绘制
+        ///
+        /// 平铺模式下，只有精灵的中心区域、四个边的中心会进行平铺，Border的4个角只绘制一次、不平铺。这是这个模式下特殊的地方。
         /// </summary>
-
         void GenerateTiledSprite(VertexHelper toFill)
         {
             Vector4 outer, inner, border;
+            //精灵尺寸，像素值
             Vector2 spriteSize;
 
+            //获取精灵内、外边框位置，见九宫精灵绘制
             if (activeSprite != null)
             {
                 outer = Sprites.DataUtility.GetOuterUV(activeSprite);
                 inner = Sprites.DataUtility.GetInnerUV(activeSprite);
                 border = activeSprite.border;
+                //精灵自身rect的值也都是像素值
                 spriteSize = activeSprite.rect.size;
             }
             else
@@ -1140,34 +1327,47 @@ namespace UnityEngine.UI
                 outer = Vector4.zero;
                 inner = Vector4.zero;
                 border = Vector4.zero;
+                //如果没有精灵，那么默认精灵的像素尺寸是100*100
                 spriteSize = Vector2.one * 100;
             }
 
             Rect rect = GetPixelAdjustedRect();
+            //计算平铺精灵的中心绘制大小：精灵尺寸减去Border尺寸，然后再乘以平铺缩放
             float tileWidth = (spriteSize.x - border.x - border.z) / multipliedPixelsPerUnit;
             float tileHeight = (spriteSize.y - border.y - border.w) / multipliedPixelsPerUnit;
 
+            //Border也要根据像素对齐后的Rect精修一下
             border = GetAdjustedBorders(border / multipliedPixelsPerUnit, rect);
 
+            //UV只要内边框的UV
             var uvMin = new Vector2(inner.x, inner.y);
             var uvMax = new Vector2(inner.z, inner.w);
 
             // Min to max max range for tiled region in coordinates relative to lower left corner.
+            //Image本身的Rect，计算去掉精修的Border之后的中心平铺绘制区域，都是自身的相对位置
+            //通过这几个数据，就能进行中心区域、4边区域的平铺绘制了
             float xMin = border.x;
             float xMax = rect.width - border.z;
             float yMin = border.y;
             float yMax = rect.height - border.w;
 
             toFill.Clear();
+            //临时的用于计算裁切时右上顶点UV的值
             var clipped = uvMax;
 
             // if either width is zero we cant tile so just assume it was the full width.
+            //如果精灵的平铺自身尺寸是0，那么就假设它的尺寸是整个Rect的中心平铺绘制区域
+            //这样的效果是，比如tileWidth是0，那么x轴方向上就不再进行平铺了，而是中心像素点进行拉伸。
+            //因为tilewidth=0，说明中间没有像素了，但是这里又把它的width尺寸设置为整个区域的宽度，那么就相当于中间的像素要填充整个宽度，相当于拉伸了
             if (tileWidth <= 0)
                 tileWidth = xMax - xMin;
 
             if (tileHeight <= 0)
                 tileHeight = yMax - yMin;
 
+            //精灵不为空、且精灵有边界或者是在图集中的、且纹理导入的环绕方式不是Repeat
+            //这样的精灵本身无法进行平铺，所以需要重新生成顶点，进行平铺
+            //但是要限制生成的顶点数量，不超过65000（Unity单个网格不能超过65000）
             if (activeSprite != null && (hasBorder || activeSprite.packed || activeSprite.texture != null && activeSprite.texture.wrapMode != TextureWrapMode.Repeat))
             {
                 // Sprite has border, or is not in repeat mode, or cannot be repeated because of packing.
@@ -1176,14 +1376,22 @@ namespace UnityEngine.UI
                 // Evaluate how many vertices we will generate. Limit this number to something sane,
                 // especially since meshes can not have more than 65000 vertices.
 
+                //X轴平铺数量
                 long nTilesW = 0;
+                //Y轴平铺数量
                 long nTilesH = 0;
+                
+                //计算每个Tile的宽高
+                //如果要绘制中心区域的话
                 if (m_FillCenter)
                 {
+                    //XY轴的绘制数量分别是总长度/单个Tile的长度
                     nTilesW = (long)Math.Ceiling((xMax - xMin) / tileWidth);
                     nTilesH = (long)Math.Ceiling((yMax - yMin) / tileHeight);
 
+                    //总的顶点数量
                     double nVertices = 0;
+                    //如果有Border，那么XY轴绘制数量要各自多2个；然后每个Tile要用4个顶点进行绘制，所以能计算出总的顶点数量
                     if (hasBorder)
                     {
                         nVertices = (nTilesW + 2.0) * (nTilesH + 2.0) * 4.0; // 4 vertices per tile
@@ -1193,11 +1401,14 @@ namespace UnityEngine.UI
                         nVertices = nTilesW * nTilesH * 4.0; // 4 vertices per tile
                     }
 
+                    //如果总的顶点数超过65000，那么将总顶点数量将固定在65000
                     if (nVertices > 65000.0)
                     {
                         Debug.LogError("Too many sprite tiles on Image \"" + name + "\". The tile size will be increased. To remove the limit on the number of tiles, set the Wrap mode to Repeat in the Image Import Settings", this);
 
+                        //由于将顶点限制在65000个，那么这里就计算出总的quad数量
                         double maxTiles = 65000.0 / 4.0; // Max number of vertices is 65000; 4 vertices per tile.
+                        //未经过限制前，X轴绘制的Quad数量与Y轴绘制Quad数量的比值，后面重新计算Tile数量时要保持这个比值
                         double imageRatio;
                         if (hasBorder)
                         {
@@ -1208,28 +1419,36 @@ namespace UnityEngine.UI
                             imageRatio = (double)nTilesW / nTilesH;
                         }
 
+                        //由于限制了总的Tile数量，这里就根据总的Tile数量，反向计算出新的Tile的XY轴各自的数量
                         double targetTilesW = Math.Sqrt(maxTiles / imageRatio);
                         double targetTilesH = targetTilesW * imageRatio;
+                        //如果有边界，那么XY轴还要各自减去2
                         if (hasBorder)
                         {
                             targetTilesW -= 2;
                             targetTilesH -= 2;
                         }
 
+                        //计算出来的数量向下取整，然后就能计算出每个Tile的宽高
                         nTilesW = (long)Math.Floor(targetTilesW);
                         nTilesH = (long)Math.Floor(targetTilesH);
                         tileWidth = (xMax - xMin) / nTilesW;
                         tileHeight = (yMax - yMin) / nTilesH;
                     }
                 }
+                //如果不绘制中心区域，意思就是中心区域不平铺、不绘制
                 else
                 {
+                    //如果有Border，那么即使不绘制中心区域，还是要绘制Border、并且Border4个边的中心还是要平铺的
                     if (hasBorder)
                     {
                         // Texture on the border is repeated only in one direction.
+                        //平铺数量的计算方式，跟上面计算方式一致
                         nTilesW = (long)Math.Ceiling((xMax - xMin) / tileWidth);
                         nTilesH = (long)Math.Ceiling((yMax - yMin) / tileHeight);
+                        //总顶点数量=去除中心Tile的总Tile数量*4
                         double nVertices = (nTilesH + nTilesW + 2.0 /*corners*/) * 2.0 /*sides*/ * 4.0 /*vertices per tile*/;
+                        //如果总顶点数>65000，那么还是按照上面一样处理
                         if (nVertices > 65000.0)
                         {
                             Debug.LogError("Too many sprite tiles on Image \"" + name + "\". The tile size will be increased. To remove the limit on the number of tiles, set the Wrap mode to Repeat in the Image Import Settings", this);
@@ -1245,19 +1464,29 @@ namespace UnityEngine.UI
                             tileHeight = (yMax - yMin) / nTilesH;
                         }
                     }
+                    //如果没有Border、又不绘制中心区域，那么就没有任何东西需要绘制了
                     else
                     {
                         nTilesH = nTilesW = 0;
                     }
                 }
 
+                //根据得出的宽高，给每个Tile生成Quad
+                //先生成中心区域的Tile
                 if (m_FillCenter)
                 {
                     // TODO: we could share vertices between quads. If vertex sharing is implemented. update the computation for the number of vertices accordingly.
+                    //目前没有使用相邻Quad的顶点共享，其实可以共享，但是前面的计算总的顶点数的方式要改一下
+                    
+                    //这里2次for循环，对每个Tile进行生成
                     for (long j = 0; j < nTilesH; j++)
                     {
+                        //左下角顶点的Y
                         float y1 = yMin + j * tileHeight;
+                        //右上角顶点的Y
                         float y2 = yMin + (j + 1) * tileHeight;
+                        //如果此时右上角的Y值超过了最大Y值，那么需要裁切一下，把右上角限制到最大值上
+                        //同时计算出裁切之后的该点的新的UV值
                         if (y2 > yMax)
                         {
                             clipped.y = uvMin.y + (uvMax.y - uvMin.y) * (yMax - y1) / (y2 - y1);
@@ -1266,35 +1495,47 @@ namespace UnityEngine.UI
                         clipped.x = uvMax.x;
                         for (long i = 0; i < nTilesW; i++)
                         {
+                            //左下角顶点的X
                             float x1 = xMin + i * tileWidth;
+                            //右上角顶点的X
                             float x2 = xMin + (i + 1) * tileWidth;
+                            //如果此时右上角的X值超过了最大X值，那么需要裁切一下，把右上角限制到最大值上
+                            //同时计算出裁切之后的该点的新的UV值
                             if (x2 > xMax)
                             {
                                 clipped.x = uvMin.x + (uvMax.x - uvMin.x) * (xMax - x1) / (x2 - x1);
                                 x2 = xMax;
                             }
+                            //把该Tile生成Quad
                             AddQuad(toFill, new Vector2(x1, y1) + rect.position, new Vector2(x2, y2) + rect.position, color, uvMin, clipped);
                         }
                     }
                 }
+                //然后再生成边界
                 if (hasBorder)
                 {
                     clipped = uvMax;
+                    //左右两条Border边的中间部分的Tile
                     for (long j = 0; j < nTilesH; j++)
                     {
+                        //左下角顶点的Y
                         float y1 = yMin + j * tileHeight;
+                        //右上角顶点的Y
                         float y2 = yMin + (j + 1) * tileHeight;
+                        //裁切方式与上面一致
                         if (y2 > yMax)
                         {
                             clipped.y = uvMin.y + (uvMax.y - uvMin.y) * (yMax - y1) / (y2 - y1);
                             y2 = yMax;
                         }
+                        //左边BorderTile的左下角相对X一定是0，右上角的相对X是xMin
                         AddQuad(toFill,
                             new Vector2(0, y1) + rect.position,
                             new Vector2(xMin, y2) + rect.position,
                             color,
                             new Vector2(outer.x, uvMin.y),
                             new Vector2(uvMin.x, clipped.y));
+                        //右边BorderTile的左下角相对X一定是xMax，右上角的相对X是Rect的宽度最大值
                         AddQuad(toFill,
                             new Vector2(xMax, y1) + rect.position,
                             new Vector2(rect.width, y2) + rect.position,
@@ -1304,6 +1545,8 @@ namespace UnityEngine.UI
                     }
 
                     // Bottom and top tiled border
+                    //上下两条Border边的中间部分的Tile
+                    //计算方式一致
                     clipped = uvMax;
                     for (long i = 0; i < nTilesW; i++)
                     {
@@ -1329,24 +1572,29 @@ namespace UnityEngine.UI
                     }
 
                     // Corners
+                    //4个角不会平铺，所以各自绘制一个即可
+                    //左下
                     AddQuad(toFill,
                         new Vector2(0, 0) + rect.position,
                         new Vector2(xMin, yMin) + rect.position,
                         color,
                         new Vector2(outer.x, outer.y),
                         new Vector2(uvMin.x, uvMin.y));
+                    //右下
                     AddQuad(toFill,
                         new Vector2(xMax, 0) + rect.position,
                         new Vector2(rect.width, yMin) + rect.position,
                         color,
                         new Vector2(uvMax.x, outer.y),
                         new Vector2(outer.z, uvMin.y));
+                    //左上
                     AddQuad(toFill,
                         new Vector2(0, yMax) + rect.position,
                         new Vector2(xMin, rect.height) + rect.position,
                         color,
                         new Vector2(outer.x, uvMax.y),
                         new Vector2(uvMin.x, outer.w));
+                    //右上
                     AddQuad(toFill,
                         new Vector2(xMax, yMax) + rect.position,
                         new Vector2(rect.width, rect.height) + rect.position,
@@ -1355,11 +1603,14 @@ namespace UnityEngine.UI
                         new Vector2(outer.z, outer.w));
                 }
             }
+            //如果精灵没有Border、并且纹理导入的环绕模式是Repeat、并且没有在图集中，那么使用纹理自己的Tile
             else
             {
                 // Texture has no border, is in repeat mode and not packed. Use texture tiling.
+                //计算一下UV的缩放，因为平铺模式下其实是使用UV来进行平铺的，比如UV=（1.5,1.5），那么超过1的部分会进行重新定位、实现平铺功能
                 Vector2 uvScale = new Vector2((xMax - xMin) / tileWidth, (yMax - yMin) / tileHeight);
 
+                //因为没有Border，所以只有勾上了中心区域绘制，才能够绘制
                 if (m_FillCenter)
                 {
                     AddQuad(toFill, new Vector2(xMin, yMin) + rect.position, new Vector2(xMax, yMax) + rect.position, color, Vector2.Scale(uvMin, uvScale), Vector2.Scale(uvMax, uvScale));
@@ -1367,6 +1618,15 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 向VertexHelper中添加Quad四边形
+        ///
+        /// 使用传入的4个顶点和对应的UV生成，可以生成不规则四边形、非矩形
+        /// </summary>
+        /// <param name="vertexHelper"></param>
+        /// <param name="quadPositions"></param>
+        /// <param name="color"></param>
+        /// <param name="quadUVs"></param>
         static void AddQuad(VertexHelper vertexHelper, Vector3[] quadPositions, Color32 color, Vector3[] quadUVs)
         {
             int startIndex = vertexHelper.currentVertCount;
@@ -1378,6 +1638,16 @@ namespace UnityEngine.UI
             vertexHelper.AddTriangle(startIndex + 2, startIndex + 3, startIndex);
         }
 
+        /// <summary>
+        /// 向VertexHelper中添加Quad四边形
+        /// 2个三角形，顺时针顺序，只会生成矩形
+        /// </summary>
+        /// <param name="vertexHelper"></param>
+        /// <param name="posMin"></param>
+        /// <param name="posMax"></param>
+        /// <param name="color"></param>
+        /// <param name="uvMin"></param>
+        /// <param name="uvMax"></param>
         static void AddQuad(VertexHelper vertexHelper, Vector2 posMin, Vector2 posMax, Color32 color, Vector2 uvMin, Vector2 uvMax)
         {
             int startIndex = vertexHelper.currentVertCount;
@@ -1390,7 +1660,14 @@ namespace UnityEngine.UI
             vertexHelper.AddTriangle(startIndex, startIndex + 1, startIndex + 2);
             vertexHelper.AddTriangle(startIndex + 2, startIndex + 3, startIndex);
         }
-
+        
+        /// <summary>
+        /// 获取调整之后的精灵Border值
+        /// 入参、出参都是像素值
+        /// </summary>
+        /// <param name="border">传入的是Border像素值</param>
+        /// <param name="adjustedRect">像素对齐后的Rect</param>
+        /// <returns></returns>
         private Vector4 GetAdjustedBorders(Vector4 border, Rect adjustedRect)
         {
             Rect originalRect = rectTransform.rect;
@@ -1403,6 +1680,9 @@ namespace UnityEngine.UI
                 // may be slightly larger than the original rect.
                 // Adjust the border to match the adjustedRect to avoid
                 // small gaps between borders (case 833201).
+                //由于RectTransform为了像素对齐，可能会略微调整Rect大小，
+                //所以为了适配调整后的Rect，Border也会对应的进行调整，防止Border之间出现缝隙。
+                //实际上就是算出像素对齐前后的Rect的缩放大小，然后相应的缩放对应的Border
                 if (originalRect.size[axis] != 0)
                 {
                     borderScaleRatio = adjustedRect.size[axis] / originalRect.size[axis];
@@ -1412,6 +1692,8 @@ namespace UnityEngine.UI
 
                 // If the rect is smaller than the combined borders, then there's not room for the borders at their normal size.
                 // In order to avoid artefacts with overlapping borders, we scale the borders down to fit.
+                //九宫的Border，理论上是不会随着Image大小而变化的，所以它才能有九宫缩放的效果。
+                //但是如果Image的Rect本身的大小要比Border还要小，无法放下Border，那么也会对Border进行缩放
                 float combinedBorders = border[axis] + border[axis + 2];
                 if (adjustedRect.size[axis] < combinedBorders && combinedBorders != 0)
                 {
@@ -1423,11 +1705,16 @@ namespace UnityEngine.UI
             return border;
         }
 
+        //临时的、用于填充绘制的左下右上顶点缓存
         static readonly Vector3[] s_Xy = new Vector3[4];
+        //临时的、用于填充绘制的左下右上UV缓存
         static readonly Vector3[] s_Uv = new Vector3[4];
 
         /// <summary>
         /// Generate vertices for a filled Image.
+        /// 填充精灵绘制
+        ///
+        /// 主要是在于实现扇形、进度条类型的裁切。
         /// </summary>
         void GenerateFilledSprite(VertexHelper toFill, bool preserveAspect)
         {
@@ -1440,39 +1727,53 @@ namespace UnityEngine.UI
             Vector4 outer = activeSprite != null ? Sprites.DataUtility.GetOuterUV(activeSprite) : Vector4.zero;
             UIVertex uiv = UIVertex.simpleVert;
             uiv.color = color;
-
+            
+            //左下与右上UV，外边框UV
             float tx0 = outer.x;
             float ty0 = outer.y;
             float tx1 = outer.z;
             float ty1 = outer.w;
 
             // Horizontal and vertical filled sprites are simple -- just end the Image prematurely
+            //水平与垂直模式处理
             if (m_FillMethod == FillMethod.Horizontal || m_FillMethod == FillMethod.Vertical)
             {
+                //水平方式
                 if (fillMethod == FillMethod.Horizontal)
                 {
+                    //变更的UV部分，比如左下UV=（0.1,0.1）、右上=（1,1），那么可变更的总的UV可变范围是x是0.9、y是0.9
+                    //那么如果当前填充度是0.5，那么UV变化就变成了0.45
                     float fill = (tx1 - tx0) * m_FillAmount;
 
+                    //右->左，同时变更绘制区域和UV
                     if (m_FillOrigin == 1)
                     {
+                        //绘制区域左边界变化
                         v.x = v.z - (v.z - v.x) * m_FillAmount;
+                        //UV左下角变化
                         tx0 = tx1 - fill;
                     }
+                    //左->右，同时变更绘制区域和UV
                     else
                     {
+                        //绘制区域右边界变化
                         v.z = v.x + (v.z - v.x) * m_FillAmount;
+                        //UV右上角变化
                         tx1 = tx0 + fill;
                     }
                 }
+                //竖直方式，同水平方式
                 else if (fillMethod == FillMethod.Vertical)
                 {
                     float fill = (ty1 - ty0) * m_FillAmount;
 
+                    //上->下
                     if (m_FillOrigin == 1)
                     {
                         v.y = v.w - (v.w - v.y) * m_FillAmount;
                         ty0 = ty1 - fill;
                     }
+                    //下->上
                     else
                     {
                         v.w = v.y + (v.w - v.y) * m_FillAmount;
@@ -1481,6 +1782,7 @@ namespace UnityEngine.UI
                 }
             }
 
+            //顶点与UV都缓存一下
             s_Xy[0] = new Vector2(v.x, v.y);
             s_Xy[1] = new Vector2(v.x, v.w);
             s_Xy[2] = new Vector2(v.z, v.w);
@@ -1622,6 +1924,7 @@ namespace UnityEngine.UI
                         }
                     }
                 }
+                //如果是全部填充，那么直接生成一个简单Quad即可
                 else
                 {
                     AddQuad(toFill, s_Xy, color, s_Uv);

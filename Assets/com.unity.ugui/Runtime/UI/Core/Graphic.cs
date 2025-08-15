@@ -105,6 +105,7 @@ namespace UnityEngine.UI
         }
 
         // Cached and saved values
+        //自定义使用的材质，如果为空，那么会使用UI的默认材质
         [FormerlySerializedAs("m_Mat")]
         [SerializeField] protected Material m_Material;
 
@@ -1074,7 +1075,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns a pixel perfect Rect closest to the Graphic RectTransform.
-        /// 获取经过不同分辨率适配后的像素大小
+        /// 获取经过像素适配后的Rect，世界空间尺寸，不是像素
         /// 非Canvas，与分辨率无关，直接返回Rect区域
         /// Canvas：非世界空间的、缩放不是0的、像素对齐的，需要返回像素适配后的Rect
         /// 需要注意的是，像素对齐会使得位置信息完全匹配像素，比如(1.2, 1.05)会强制变为(1, 1)，所以可能会导致位置失控
