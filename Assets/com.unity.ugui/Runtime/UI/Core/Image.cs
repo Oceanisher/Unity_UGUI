@@ -957,7 +957,7 @@ namespace UnityEngine.UI
         {
             //精灵上下左右裁掉的空白像素大小
             var padding = activeSprite == null ? Vector4.zero : Sprites.DataUtility.GetPadding(activeSprite);
-            //精灵的尺寸
+            //精灵的像素尺寸
             var size = activeSprite == null ? Vector2.zero : new Vector2(activeSprite.rect.width, activeSprite.rect.height);
 
             //获取该图形元素的绘制尺寸
@@ -1663,9 +1663,9 @@ namespace UnityEngine.UI
         
         /// <summary>
         /// 获取调整之后的精灵Border值
-        /// 入参、出参都是像素值
+        /// 入参、出参都是世界单位
         /// </summary>
-        /// <param name="border">传入的是Border像素值</param>
+        /// <param name="border">传入的是Border世界单位</param>
         /// <param name="adjustedRect">像素对齐后的Rect</param>
         /// <returns></returns>
         private Vector4 GetAdjustedBorders(Vector4 border, Rect adjustedRect)
@@ -1705,9 +1705,9 @@ namespace UnityEngine.UI
             return border;
         }
 
-        //临时的、用于填充绘制的左下右上顶点缓存
+        //临时的、用于填充绘制的左下、左上、右上、右下顶点缓存
         static readonly Vector3[] s_Xy = new Vector3[4];
-        //临时的、用于填充绘制的左下右上UV缓存
+        //临时的、用于填充绘制的左下、左上、右上、右下UV缓存
         static readonly Vector3[] s_Uv = new Vector3[4];
 
         /// <summary>
@@ -1796,11 +1796,16 @@ namespace UnityEngine.UI
             {
                 if (m_FillAmount < 1f && m_FillMethod != FillMethod.Horizontal && m_FillMethod != FillMethod.Vertical)
                 {
+                    //如果是90度扇形
                     if (fillMethod == FillMethod.Radial90)
                     {
+                        //扇形裁剪成功，那么直接添加Quad，此时的Quad可能是个不规则的Quad，因为要减去不渲染的部分
                         if (RadialCut(s_Xy, s_Uv, m_FillAmount, m_FillClockwise, m_FillOrigin))
                             AddQuad(toFill, s_Xy, color, s_Uv);
                     }
+                    //如果是180度扇形
+                    //核心算法是把矩形分成2个部分，左边一个矩形、右边一个矩形，这样就能当成2个90°扇形处理。
+                    //原本180扇形可能出现5个顶点，这样就保持每个都是4个顶点，就能用Quad了
                     else if (fillMethod == FillMethod.Radial180)
                     {
                         for (int side = 0; side < 2; ++side)
@@ -1867,6 +1872,9 @@ namespace UnityEngine.UI
                             }
                         }
                     }
+                    //如果是360度扇形
+                    //核心算法是把矩形分成4个部分，左上、左下、右上、右下4个部分，这样就能当成4个90°扇形处理。
+                    //也就是说用4个Quad就能表示360度的情况了
                     else if (fillMethod == FillMethod.Radial360)
                     {
                         for (int corner = 0; corner < 4; ++corner)
@@ -1934,25 +1942,38 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Adjust the specified quad, making it be radially filled instead.
+        /// 将Quad进行扇形裁剪
+        /// <param name="fill">填充度，0~1</param>
+        /// <param name="invert">是否是顺时针</param>
+        /// <param name="corner">Fill方式，90/180/360，传进来的是数字枚举值</param>
+        /// <returns>true:按照Quad填充； false：无效、不处理</returns>
         /// </summary>
 
         static bool RadialCut(Vector3[] xy, Vector3[] uv, float fill, bool invert, int corner)
         {
             // Nothing to fill
+            //如果没有任何填充度，那么不填充
             if (fill < 0.001f) return false;
 
             // Even corners invert the fill direction
+            //根据Fill方式，调整顺时针类型
             if ((corner & 1) == 1) invert = !invert;
 
             // Nothing to adjust
+            //如果顺时针、并且是满填充，那么直接画个Quad即可
             if (!invert && fill > 0.999f) return true;
 
             // Convert 0-1 value into 0 to 90 degrees angle in radians
+            //填充度转angle百分比，如果顺时针、填充度0.2，那么最终转换的角度是90 * 0.8 = 72，再转为弧度值
+            //angle是个弧度值
+            //angle是不填充的部分的弧度值
+            //从计算的方式能看出来，角度计算与RectTransform的形状没有关系，无论是长方形、还是正方形，只要填充度是0.5，那么计算出来的角度就是45度
             float angle = Mathf.Clamp01(fill);
             if (invert) angle = 1f - angle;
             angle *= 90f * Mathf.Deg2Rad;
 
             // Calculate the effective X and Y factors
+            //计算angle的sin、cos值
             float cos = Mathf.Cos(angle);
             float sin = Mathf.Sin(angle);
 
@@ -1963,15 +1984,23 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Adjust the specified quad, making it be radially filled instead.
+        /// 将Quad进行扇形裁剪，调整顶点
+        /// 因为扇形要么是3个顶点、要么是4个，不会超过这个顶点数，所以无论怎么填充，都用传入的4个顶点即可
         /// </summary>
 
         static void RadialCut(Vector3[] xy, float cos, float sin, bool invert, int corner)
         {
+            //下面的注释都把Corner当做是Origin90
+            //假如Corner是Origin90的BottomLeft=0
             int i0 = corner;
+            //此时i1是TopLeft=1
             int i1 = ((corner + 1) % 4);
+            //此时i2是TopRight=2
             int i2 = ((corner + 2) % 4);
+            //此时i3是BottomRight=3
             int i3 = ((corner + 3) % 4);
-
+            
+            //如果Corner是TopLeft
             if ((corner & 1) == 1)
             {
                 if (sin > cos)
@@ -2005,8 +2034,10 @@ namespace UnityEngine.UI
                 if (!invert) xy[i3].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
                 else xy[i1].y = Mathf.Lerp(xy[i0].y, xy[i2].y, sin);
             }
+            //如果Corner不是TopLeft，假定此时是BottomLeft
             else
             {
+                //如果Cos大于Sin，说明不填充部分的角度小于45度，也就是说右上角的顶点是包含在渲染部分中，那么渲染部分是个四边形
                 if (cos > sin)
                 {
                     sin /= cos;
@@ -2018,14 +2049,21 @@ namespace UnityEngine.UI
                         xy[i2].y = xy[i1].y;
                     }
                 }
+                //如果Sin大于Cos，说明不填充部分的角度大于45度，也就是说右上角的顶点是不包含在渲染部分中，那么渲染部分是三角形
                 else if (sin > cos)
                 {
+                    //这里是求出不填充的部分的下边与右边的比值，当成正方形来计算的，因为外部使用的是填充度
+                    //无论是矩形、还是正方形，当填充度时0.5的时候，随着形状变化、填充的角度也会变化，但是始终填充一半。
+                    //所以 cos/=sin 计算出来的就是正方形扇形中下边与右边的比值。
                     cos /= sin;
+                    //因为当成正方形，所以Sin变成1
                     sin = 1f;
 
                     if (invert)
                     {
+                        //使用这个比值，来对右上角的X点进行重新计算
                         xy[i2].x = Mathf.Lerp(xy[i0].x, xy[i2].x, cos);
+                        //右下角的X要跟右上角一致
                         xy[i3].x = xy[i2].x;
                     }
                 }
@@ -2058,6 +2096,8 @@ namespace UnityEngine.UI
         /// <summary>
         /// If there is a sprite being rendered returns the size of that sprite.
         /// In the case of a slided or tiled sprite will return the calculated minimum size possible
+        /// 如果有精灵，那么完美宽度返回精灵的宽度
+        /// 如果有精灵、且是裁切或者是平铺的，那么完美宽度返回精灵的最小尺寸
         /// </summary>
         public virtual float preferredWidth
         {
@@ -2084,6 +2124,8 @@ namespace UnityEngine.UI
         /// <summary>
         /// If there is a sprite being rendered returns the size of that sprite.
         /// In the case of a slided or tiled sprite will return the calculated minimum size possible
+        /// 如果有精灵，那么完美高度返回精灵的高度
+        /// 如果有精灵、且是裁切或者是平铺的，那么完美高度返回精灵的最小尺寸
         /// </summary>
         public virtual float preferredHeight
         {
@@ -2109,6 +2151,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Calculate if the ray location for this image is a valid hit location. Takes into account a Alpha test threshold.
+        /// 判断射线是否有效命中，这里需要考虑Alpha值
         /// </summary>
         /// <param name="screenPoint">The screen point to check against</param>
         /// <param name="eventCamera">The camera in which to use to calculate the coordinating position</param>
@@ -2116,36 +2159,47 @@ namespace UnityEngine.UI
         /// <remarks> Also see See:ICanvasRaycastFilter.</remarks>
         public virtual bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera)
         {
+            //如果Alpha值小于等于0，也就是说完全不看Alpha值，那么一定是命中的
             if (alphaHitTestMinimumThreshold <= 0)
                 return true;
 
+            //如果Alpha大于1，那么没有任何精灵的像素透明度会超过1，那么此时完全不命中
             if (alphaHitTestMinimumThreshold > 1)
                 return false;
 
+            //没有精灵，那么就不需要看透明度了，此时就是命中
             if (activeSprite == null)
                 return true;
 
             Vector2 local;
+            //如果射线在RectTransform之外，那么不算命中
+            //计算出射线点位置，是在RectTransform中的相对坐标，相对于Rect的逻辑中心点
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screenPoint, eventCamera, out local))
                 return false;
 
+            //获取像素对齐后的Rect范围
             Rect rect = GetPixelAdjustedRect();
 
+            //根据宽高比调整Rect范围
             if (m_PreserveAspect)
                 PreserveSpriteAspectRatio(ref rect, new Vector2(activeSprite.texture.width, activeSprite.texture.height));
 
+            //射线交汇点转换为相对于Rect左下角的相对位置
             // Convert to have lower left corner as reference point.
             local.x += rectTransform.pivot.x * rect.width;
             local.y += rectTransform.pivot.y * rect.height;
 
+            //交汇点转换为纹理中的映射像素位置
             local = MapCoordinate(local, rect);
 
+            //把纹理的映射位置转换为百分比，也就是归一化的坐标
             // Convert local coordinates to texture space.
             float x = local.x / activeSprite.texture.width;
             float y = local.y / activeSprite.texture.height;
 
             try
             {
+                //根据这个百分比，经过二次线性过滤找到纹理中对应的像素点，然后看透明度是否是大于阈值
                 return activeSprite.texture.GetPixelBilinear(x, y).a >= alphaHitTestMinimumThreshold;
             }
             catch (UnityException e)
@@ -2155,44 +2209,71 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 获取local点在纹理上的像素点位置
+        /// </summary>
+        /// <param name="local">相对于Transform左下角的相对位置，射线命中位置</param>
+        /// <param name="rect">像素对齐并调整后的Transform的Rect区域</param>
+        /// <returns></returns>
         private Vector2 MapCoordinate(Vector2 local, Rect rect)
         {
+            //精灵的像素Rect，在纹理中的大小和位置，都是像素的
             Rect spriteRect = activeSprite.rect;
+            //如果是简单模式、填充模式，那么直接就是精灵偏移+精灵根据local比例的像素点，就是最终计算出来的在纹理上的位置
             if (type == Type.Simple || type == Type.Filled)
                 return new Vector2(spriteRect.position.x + local.x * spriteRect.width / rect.width, spriteRect.position.y + local.y * spriteRect.height / rect.height);
 
+            //如果是平铺、九宫模式，那么根据具体的模式，返回命中的纹理位置
+            //像素单位Border
             Vector4 border = activeSprite.border;
+            //适配后的世界单位Border
             Vector4 adjustedBorder = GetAdjustedBorders(border / pixelsPerUnit, rect);
 
+            //在下面的步骤中，世界单位的local最终转换为在纹理中的像素坐标
             for (int i = 0; i < 2; i++)
             {
+                //如果射线位置在Border左边界、下边界之外，那么不处理
                 if (local[i] <= adjustedBorder[i])
                     continue;
 
+                //如果射线位置在中心区域的上边界、右边界之外，也就是落在Border中、或者Border外
+                //这里的计算是错误的，因为rect是世界单位，spriteRect是像素单位
+                //正确的计算应该是 percent = (rect.size[i] - local[i]) / adjustedBorder[i + 2]，先计算射线点在在边界内的比例
+                //然后使用像素的Border计算射线点距离边界的像素距离 percent * border[i + 2]
                 if (rect.size[i] - local[i] <= adjustedBorder[i + 2])
                 {
                     local[i] -= (rect.size[i] - spriteRect.size[i]);
                     continue;
                 }
 
+                //如果是九宫模式
                 if (type == Type.Sliced)
                 {
+                    //计算命中位置在中心区域的百分比
                     float lerp = Mathf.InverseLerp(adjustedBorder[i], rect.size[i] - adjustedBorder[i + 2], local[i]);
+                    //根据这个百分比，计算出命中位置在精灵Rect上的像素位置
                     local[i] = Mathf.Lerp(border[i], spriteRect.size[i] - border[i + 2], lerp);
                 }
+                //如果是平铺的，那么调整命中local位置到纹理中
                 else
                 {
+                    //先把命中位置减去边界
                     local[i] -= adjustedBorder[i];
+                    //然后把 local[i] 不断的对中心区域平铺求余，从而得到平铺后的相对位置
+                    //这里感觉有BUG，local是世界单位、spriteRect是像素单位，有问题
                     local[i] = Mathf.Repeat(local[i], spriteRect.size[i] - border[i] - border[i + 2]);
+                    //然后加上边界，就是精灵上的纹理位置
                     local[i] += border[i];
                 }
             }
 
+            //最后，修正后的local位置加上精灵自身的偏移，就是最终映射到纹理的位置
             return local + spriteRect.position;
         }
 
         // To track textureless images, which will be rebuild if sprite atlas manager registered a Sprite Atlas that will give this image new texture
         static List<Image> m_TrackedTexturelessImages = new List<Image>();
+        //是否进行了初始化，在OnEnable中进行初始化
         static bool s_Initialized;
 
         static void RebuildImage(SpriteAtlas spriteAtlas)
@@ -2200,6 +2281,7 @@ namespace UnityEngine.UI
             for (var i = m_TrackedTexturelessImages.Count - 1; i >= 0; i--)
             {
                 var g = m_TrackedTexturelessImages[i];
+                //如果Atlas中包含当前sprite，那么重建，并且从追踪列表中踢出去
                 if (null != g.activeSprite && spriteAtlas.CanBindTo(g.activeSprite))
                 {
                     g.SetAllDirty();
@@ -2212,6 +2294,7 @@ namespace UnityEngine.UI
         {
             if (!s_Initialized)
             {
+                //监听atlas注册信息
                 SpriteAtlasManager.atlasRegistered += RebuildImage;
                 s_Initialized = true;
             }
