@@ -7,9 +7,11 @@ namespace UnityEngine.UI
     [AddComponentMenu("UI/Legacy/Text", 100)]
     /// <summary>
     /// The default Graphic to draw font data to screen.
+    /// 文本组件
     /// </summary>
     public class Text : MaskableGraphic, ILayoutElement
     {
+        //字体配置数据
         [SerializeField] private FontData m_FontData = FontData.defaultFontData;
 
 #if UNITY_EDITOR
@@ -17,9 +19,12 @@ namespace UnityEngine.UI
         private Font m_LastTrackedFont;
 #endif
 
+        //显示的字符串
         [TextArea(3, 10)][SerializeField] protected string m_Text = String.Empty;
 
+        //渲染使用的字符纹理生成器
         private TextGenerator m_TextCache;
+        //为Layout重建时使用的字体生成器，应该是为了防止污染渲染的字体生成器
         private TextGenerator m_TextCacheForLayout;
 
         static protected Material s_DefaultText = null;
@@ -34,6 +39,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The cached TextGenerator used when generating visible Text.
+        /// 字符纹理生成器
         /// </summary>
 
         public TextGenerator cachedTextGenerator
@@ -43,6 +49,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The cached TextGenerator used when determine Layout
+        /// 为Layout重建时使用的字体生成器，应该是为了防止污染渲染的字体生成器
         /// </summary>
         public TextGenerator cachedTextGeneratorForLayout
         {
@@ -51,6 +58,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Text's texture comes from the font.
+        /// 重写了Graphic中的纹理
+        /// 如果有字体、字体自带材质、材质中有纹理，那么返回该纹理
         /// </summary>
         public override Texture mainTexture
         {
@@ -68,6 +77,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Called by the FontUpdateTracker when the texture associated with a font is modified.
+        /// 在FontUpdateTracker中调用，每次使用的Font的Atlas发生重建的时候，都调用一下
         /// </summary>
         public void FontTextureChanged()
         {
@@ -75,9 +85,11 @@ namespace UnityEngine.UI
             if (!this)
                 return;
 
+            //如果此时正在网格构建的过程中，那么不执行
             if (m_DisableFontTextureRebuiltCallback)
                 return;
 
+            //标记字体生成器为失效，以便于下次OnPopulateMesh时完成重新生成
             cachedTextGenerator.Invalidate();
 
             if (!IsActive())
@@ -87,6 +99,8 @@ namespace UnityEngine.UI
             // cleanest solution....
             // if we detect the font texture has changed and are in a rebuild loop
             // we just regenerate the verts for the new UV's
+            //如果此时Canvas正在任意重建中，那么直接进行Text的绘制
+            //否则只是设置布局、图形Dirty
             if (CanvasUpdateRegistry.IsRebuildingGraphics() || CanvasUpdateRegistry.IsRebuildingLayout())
                 UpdateGeometry();
             else
@@ -97,6 +111,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The Font used by the text.
+        /// 组件使用的字体
+        /// 设置的时候需要重新向FontUpdateTracker中注册、反注册一下
+        /// 
         /// </summary>
         /// <remarks>
         /// This is the font used by the Text component. Use it to alter or return the font from the Text. There are many free fonts available online.
@@ -165,6 +182,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Text that's being displayed by the Text.
+        /// 要显示的字符串
         /// </summary>
         /// <remarks>
         /// This is the string value of a Text component. Use this to read or edit the message displayed in Text.
@@ -205,6 +223,7 @@ namespace UnityEngine.UI
             }
             set
             {
+                //设置的时候如果值为空、并且原始值不为空，那么进行图形重建
                 if (String.IsNullOrEmpty(value))
                 {
                     if (String.IsNullOrEmpty(m_Text))
@@ -212,6 +231,8 @@ namespace UnityEngine.UI
                     m_Text = "";
                     SetVerticesDirty();
                 }
+                //否则，图形与布局都要重建
+                //也就是说变更文字，连布局都要重新刷一下，因为可能会改变Transform的大小
                 else if (m_Text != value)
                 {
                     m_Text = value;
@@ -223,6 +244,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Whether this Text will support rich text.
+        /// 富文本的设置也会引发布局、图形重建
         /// </summary>
 
         public bool supportRichText
@@ -539,6 +561,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Provides information about how fonts are scale to the screen.
+        /// 计算PPU，根据这个PPU去渲染字体网格
+        /// 如果没有Canvas，那么PPU是1
+        /// 对于动态字体，返回Canvas的scaleFactor，来源于CanvasScaler，一般是1
+        /// 对于静态字体，用原始字体的字体大小除以组件上配置的字体大小
         /// </summary>
         /// <remarks>
         /// For dynamic fonts, the value is equivalent to the scale factor of the canvas. For non-dynamic fonts, the value is calculated from the requested text size and the size from the font.
@@ -563,6 +589,7 @@ namespace UnityEngine.UI
         protected override void OnEnable()
         {
             base.OnEnable();
+            //标记字体生成器为失效的，然后等下一个OnPopulateMesh调用时，就会完全重新生成
             cachedTextGenerator.Invalidate();
             FontUpdateTracker.TrackText(this);
         }
@@ -588,11 +615,13 @@ namespace UnityEngine.UI
         }
 
 #endif
+        //把字体重置为默认字体
         internal void AssignDefaultFont()
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
 
+        //Reset的时候调用，如果没有字体，那么会使用默认字体
         internal void AssignDefaultFontIfNecessary()
         {
             if (font == null)
@@ -601,6 +630,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Convenience function to populate the generation setting for the text.
+        /// 根据组件Size大小，生成对应的TextGenerationSettings
         /// </summary>
         /// <param name="extents">The extents the text can draw in.</param>
         /// <returns>Generated settings.</returns>
@@ -609,6 +639,7 @@ namespace UnityEngine.UI
             var settings = new TextGenerationSettings();
 
             settings.generationExtents = extents;
+            //如果是动态字体，那么写入字体的尺寸
             if (font != null && font.dynamic)
             {
                 settings.fontSize = m_FontData.fontSize;
@@ -654,27 +685,40 @@ namespace UnityEngine.UI
             }
         }
 
+        //OnPopulateMesh中使用的临时数组，用于组成Quad
         readonly UIVertex[] m_TempVerts = new UIVertex[4];
+        
+        /// <summary>
+        /// Text组件的网格构建
+        /// </summary>
+        /// <param name="toFill"></param>
         protected override void OnPopulateMesh(VertexHelper toFill)
         {
+            //没有字体，那么不进行渲染
             if (font == null)
                 return;
 
             // We don't care if we the font Texture changes while we are doing our Update.
             // The end result of cachedTextGenerator will be valid for this instance.
             // Otherwise we can get issues like Case 619238.
+            //在网格构建期间，忽略文本纹理重建回调
             m_DisableFontTextureRebuiltCallback = true;
 
+            //组件本身的Size
             Vector2 extents = rectTransform.rect.size;
 
+            //生成字体配置
             var settings = GetGenerationSettings(extents);
+            //调用TextGenerator，传入字符串、字符设置，生成对应的字符网格
             cachedTextGenerator.PopulateWithErrors(text, settings, gameObject);
 
             // Apply the offset to the vertices
             IList<UIVertex> verts = cachedTextGenerator.verts;
+            //计算出字体需要的缩放值
             float unitsPerPixel = 1 / pixelsPerUnit;
             int vertCount = verts.Count;
 
+            //如果没有生成出顶点数据，那么不渲染
             // We have no verts to process just return (case 1037923)
             if (vertCount <= 0)
             {
@@ -682,13 +726,18 @@ namespace UnityEngine.UI
                 return;
             }
 
+            //根据第一个顶点*缩放值，计算出经过像素对齐后的像素偏移值
+            //也就是看是否要像素对齐
+            //第一个顶点应该是左下角顶点
             Vector2 roundingOffset = new Vector2(verts[0].position.x, verts[0].position.y) * unitsPerPixel;
             roundingOffset = PixelAdjustPoint(roundingOffset) - roundingOffset;
             toFill.Clear();
+            //如果有偏移，那么每个顶点的位置先缩放一下，然后加上这个偏移值。然后每4个顶点生成一个Quad。
             if (roundingOffset != Vector2.zero)
             {
                 for (int i = 0; i < vertCount; ++i)
                 {
+                    //把i不断地从0~3循环
                     int tempVertsIndex = i & 3;
                     m_TempVerts[tempVertsIndex] = verts[i];
                     m_TempVerts[tempVertsIndex].position *= unitsPerPixel;
@@ -698,10 +747,12 @@ namespace UnityEngine.UI
                         toFill.AddUIVertexQuad(m_TempVerts);
                 }
             }
+            //如果没有偏移，那么每个顶点缩放一下，然后4个顶点生成一个Quad。
             else
             {
                 for (int i = 0; i < vertCount; ++i)
                 {
+                    //把i不断地从0~3循环
                     int tempVertsIndex = i & 3;
                     m_TempVerts[tempVertsIndex] = verts[i];
                     m_TempVerts[tempVertsIndex].position *= unitsPerPixel;
@@ -710,6 +761,7 @@ namespace UnityEngine.UI
                 }
             }
 
+            //重新开始监听字体纹理重建回调
             m_DisableFontTextureRebuiltCallback = false;
         }
 
@@ -721,6 +773,9 @@ namespace UnityEngine.UI
             get { return 0; }
         }
 
+        /// <summary>
+        /// 字体的最佳尺寸，要根据配置来计算，还要缩放
+        /// </summary>
         public virtual float preferredWidth
         {
             get
@@ -737,6 +792,9 @@ namespace UnityEngine.UI
             get { return 0; }
         }
 
+        /// <summary>
+        /// 字体的最佳尺寸，要根据配置来计算，还要缩放
+        /// </summary>
         public virtual float preferredHeight
         {
             get

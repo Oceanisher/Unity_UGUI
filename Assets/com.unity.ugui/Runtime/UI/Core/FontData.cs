@@ -6,52 +6,78 @@ namespace UnityEngine.UI
     [Serializable]
     /// <summary>
     /// Struct for storing Text generation settings.
+    /// 字体配置数据
     /// </summary>
     public class FontData : ISerializationCallbackReceiver
     {
+        //字体对象
         [SerializeField]
         [FormerlySerializedAs("font")]
         private Font m_Font;
 
+        //字体大小，0~300
         [SerializeField]
         [FormerlySerializedAs("fontSize")]
         private int m_FontSize;
 
+        //字体风格，通用、加粗、斜体、加粗+斜体
         [SerializeField]
         [FormerlySerializedAs("fontStyle")]
         private FontStyle m_FontStyle;
 
+        //是否开启最佳适配，开启后会优先根据控件区域大小，动态缩放字体
+        //缩小到最小值后，才会换行
+        //勾选后FontSize无效
+        //unity官方都不推荐使用
         [SerializeField]
         private bool m_BestFit;
 
+        //最小尺寸，下限到0
         [SerializeField]
         private int m_MinSize;
 
+        //最大尺寸，上限到300
         [SerializeField]
         private int m_MaxSize;
 
+        //对齐方式
         [SerializeField]
         [FormerlySerializedAs("alignment")]
         private TextAnchor m_Alignment;
 
+        //是否根据字体的几何图形进行对齐
+        //不勾选时，是根据字体设定的Glyph Metrics决定对齐时的上下左右Margin
+        //勾选时，会根据字母的真实几何图形，决定对齐时的上下左右Margin
+        //TTF的Glyph Metrics中，有一个Baseline基线，然后有往上的Ascent高度、往下的Descent高度
+        //字体会在Ascent与Descent之间，但是不一定会到达边界。不同字体的设计是自定义的。
         [SerializeField]
         private bool m_AlignByGeometry;
 
+        //是否支持富文本
         [SerializeField]
         [FormerlySerializedAs("richText")]
         private bool m_RichText;
 
+        //水平换行模式
+        //wrap:超出边界后换行
+        //overflow:溢出
         [SerializeField]
         private HorizontalWrapMode m_HorizontalOverflow;
 
+        //垂直换行模式
+        //truncate:超出边界后截断、不显示
+        //overflow:溢出
         [SerializeField]
         private VerticalWrapMode m_VerticalOverflow;
 
+        //行间距
+        //不影响第一行与上边界的距离
         [SerializeField]
         private float m_LineSpacing;
 
         /// <summary>
         /// Get a font data with sensible defaults.
+        /// 默认的字体配置数据
         /// </summary>
         public static FontData defaultFontData
         {
@@ -189,8 +215,12 @@ namespace UnityEngine.UI
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {}
 
+        /// <summary>
+        /// 反序列化之后，重新限制一下字体的大小
+        /// </summary>
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
+            //字体最大是300，最小是0
             m_FontSize = Mathf.Clamp(m_FontSize, 0, 300);
             m_MinSize = Mathf.Clamp(m_MinSize, 0, m_FontSize);
             m_MaxSize = Mathf.Clamp(m_MaxSize, m_FontSize, 300);
