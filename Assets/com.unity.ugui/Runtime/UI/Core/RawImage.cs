@@ -6,6 +6,9 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// Displays a Texture2D for the UI System.
+    /// 显示原始纹理的图形组件，而不是只能显示Sprite精灵
+    /// 如果不想生成图集Atlas、不想使用精灵，那么可以用该组件
+    /// 每个RawImage组件都会带来一次额外的DC，所以需要限制使用，最好是只用在大背景、或者临时可见的内容上
     /// </summary>
     /// <remarks>
     /// If you don't have or don't wish to create an atlas, you can simply use this script to draw a texture.
@@ -17,8 +20,13 @@ namespace UnityEngine.UI
     [AddComponentMenu("UI/Raw Image", 12)]
     public class RawImage : MaskableGraphic
     {
+        //使用的纹理
         [FormerlySerializedAs("m_Tex")]
         [SerializeField] Texture m_Texture;
+        //对纹理使用的UV区域
+        //注意，假如x=0.5,width=1，那么此时UV坐标的xMin=0.5，xMax=1.5
+        //此时UV坐标超出纹理区域了，就要看纹理自己的环绕方式。
+        //假如纹理的环绕方式
         [SerializeField] Rect m_UVRect = new Rect(0f, 0f, 1f, 1f);
 
         protected RawImage()
@@ -28,6 +36,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns the texture used to draw this Graphic.
+        /// 使用的主纹理
+        /// 有纹理优先使用纹理，没有的话从材质里找，材质里也没有那就返回默认的白色纹理
         /// </summary>
         public override Texture mainTexture
         {
@@ -48,6 +58,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The RawImage's texture to be used.
+        /// 设置纹理
+        /// 每次变更都会引起布局与图形重建
         /// </summary>
         /// <remarks>
         /// Use this to alter or return the Texture the RawImage displays. The Raw Image can display any Texture whereas an Image component can only show a Sprite Texture.
@@ -98,6 +110,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// UV rectangle used by the texture.
+        /// 设置纹理的UV
+        /// 会造成图形重建
         /// </summary>
         public Rect uvRect
         {
@@ -116,6 +130,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Adjust the scale of the Graphic to make it pixel-perfect.
+        /// 调整Trs大小，使其与纹理一致
+        /// 实际上是纹理的尺寸 * uvRect的大小
         /// </summary>
         /// <remarks>
         /// This means setting the RawImage's RectTransform.sizeDelta  to be equal to the Texture dimensions.
@@ -132,14 +148,23 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 生成Mesh
+        /// </summary>
+        /// <param name="vh"></param>
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             Texture tex = mainTexture;
             vh.Clear();
             if (tex != null)
             {
+                //获取像素对齐后的Trs区域
                 var r = GetPixelAdjustedRect();
+                //绘制区域的左下右上坐标
                 var v = new Vector4(r.x, r.y, r.x + r.width, r.y + r.height);
+                //这里是纹理的长宽乘以纹素大小，正好都等于1
+                //纹素大小 texelSize.x = 1/tex.width ，所以这里scaleX是等于1
+                //不知道为啥需要多一个scale计算
                 var scaleX = tex.width * tex.texelSize.x;
                 var scaleY = tex.height * tex.texelSize.y;
                 {
