@@ -6,94 +6,114 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// Each touch event creates one of these containing all the relevant information.
+    /// 指针事件
+    /// 鼠标/触摸都会触发
     /// </summary>
     public class PointerEventData : BaseEventData
     {
         /// <summary>
         /// Input press tracking.
+        /// 指针类型：左键、右键、中键
         /// </summary>
         public enum InputButton
         {
             /// <summary>
             /// Left button
+            /// 左键
             /// </summary>
             Left = 0,
 
             /// <summary>
             /// Right button.
+            /// 右键
             /// </summary>
             Right = 1,
 
             /// <summary>
             /// Middle button
+            /// 中键
             /// </summary>
             Middle = 2
         }
 
         /// <summary>
         /// The state of a press for the given frame.
+        /// 帧中的指针状态
         /// </summary>
         public enum FramePressState
         {
             /// <summary>
             /// Button was pressed this frame.
+            /// 该帧中指针按下
             /// </summary>
             Pressed,
 
             /// <summary>
             /// Button was released this frame.
+            /// 该帧中指针释放
             /// </summary>
             Released,
 
             /// <summary>
             /// Button was pressed and released this frame.
+            /// 该帧中指针按下又释放
             /// </summary>
             PressedAndReleased,
 
             /// <summary>
             /// Same as last frame.
+            /// 该帧中指针不变
             /// </summary>
             NotChanged
         }
 
         /// <summary>
         /// The object that received 'OnPointerEnter'.
+        /// 接收到指针进入事件的GO
         /// </summary>
         public GameObject pointerEnter { get; set; }
 
         // The object that received OnPointerDown
+        //接收到指针按下事件的GO
         private GameObject m_PointerPress;
 
         /// <summary>
         /// The raw GameObject for the last press event. This means that it is the 'pressed' GameObject even if it can not receive the press event itself.
+        /// 上次指针按下的GO，即使这个GO本身并不接收Press事件
         /// </summary>
         public GameObject lastPress { get; private set; }
 
         /// <summary>
         /// The object that the press happened on even if it can not handle the press event.
+        /// 指针按下的GO，即使这个GO本身并不接收Press事件
         /// </summary>
         public GameObject rawPointerPress { get; set; }
 
         /// <summary>
         /// The object that is receiving 'OnDrag'.
+        /// 接收到拖拽的GO
         /// </summary>
         public GameObject pointerDrag { get; set; }
 
         /// <summary>
         /// The object that should receive the 'OnPointerClick' event.
+        /// 接收到指针点击的GO
         /// </summary>
         public GameObject pointerClick { get; set; }
 
         /// <summary>
         /// RaycastResult associated with the current event.
+        /// 射线当前命中的结果
         /// </summary>
         public RaycastResult pointerCurrentRaycast { get; set; }
 
         /// <summary>
         /// RaycastResult associated with the pointer press.
+        /// 指针点击时的射线结果
         /// </summary>
         public RaycastResult pointerPressRaycast { get; set; }
 
+        //指针路过的GO列表
         public List<GameObject> hovered = new List<GameObject>();
 
         /// <summary>

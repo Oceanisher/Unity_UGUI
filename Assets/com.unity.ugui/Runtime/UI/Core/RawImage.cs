@@ -164,7 +164,7 @@ namespace UnityEngine.UI
                 var v = new Vector4(r.x, r.y, r.x + r.width, r.y + r.height);
                 //这里是纹理的长宽乘以纹素大小，正好都等于1
                 //纹素大小 texelSize.x = 1/tex.width ，所以这里scaleX是等于1
-                //不知道为啥需要多一个scale计算
+                //DeepSeek对于此处多此一举的解释是防御性编程，或者为了应对未来乘积不是1的情况
                 var scaleX = tex.width * tex.texelSize.x;
                 var scaleY = tex.height * tex.texelSize.y;
                 {

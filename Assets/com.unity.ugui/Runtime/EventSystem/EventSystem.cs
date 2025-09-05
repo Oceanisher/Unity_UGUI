@@ -12,6 +12,8 @@ namespace UnityEngine.EventSystems
     [DisallowMultipleComponent]
     /// <summary>
     /// Handles input, raycasting, and sending events.
+    /// UI事件系统
+    /// 处理输入、射线，并且发送事件
     /// </summary>
     /// <remarks>
     /// The EventSystem is responsible for processing and handling events in a Unity scene. A scene should only contain one EventSystem. The EventSystem works in conjunction with a number of modules and mostly just holds state and delegates functionality to specific, overrideable components.
@@ -23,6 +25,7 @@ namespace UnityEngine.EventSystems
 
         private BaseInputModule m_CurrentInputModule;
 
+        //EventSystem列表，在Enable的时候会向该列表中添加自己、Disable的时候取消
         private  static List<EventSystem> m_EventSystems = new List<EventSystem>();
 
         /// <summary>
@@ -259,12 +262,15 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Raycast into the scene using all configured BaseRaycasters.
+        /// 射线打击，返回射线打击结果
+        /// 被InputModule调用、又反向调用Module中的Raycast方法
         /// </summary>
         /// <param name="eventData">Current pointer data.</param>
         /// <param name="raycastResults">List of 'hits' to populate.</param>
         public void RaycastAll(PointerEventData eventData, List<RaycastResult> raycastResults)
         {
             raycastResults.Clear();
+            //获取当前所有的Raycaster，每个RayCaster都调用一次Module
             var modules = RaycasterManager.GetRaycasters();
             var modulesCount = modules.Count;
             for (int i = 0; i < modulesCount; ++i)
@@ -461,6 +467,7 @@ namespace UnityEngine.EventSystems
             UIElementsRuntimeUtility.UnregisterEventSystem(this);
 #endif
 
+            //把当前的InputModule失活
             if (m_CurrentInputModule != null)
             {
                 m_CurrentInputModule.DeactivateModule();
@@ -471,9 +478,14 @@ namespace UnityEngine.EventSystems
 
             base.OnDisable();
         }
-
+        
+        /// <summary>
+        /// Update中每帧调用，或者当Application失去焦点时调用一次
+        /// 无论是不是当前的Module、无论是否激活，都会Tick
+        /// </summary>
         private void TickModules()
         {
+            //每个InputModule都调用刷新一次
             var systemInputModulesCount = m_SystemInputModules.Count;
             for (var i = 0; i < systemInputModulesCount; i++)
             {
@@ -482,6 +494,11 @@ namespace UnityEngine.EventSystems
             }
         }
 
+        /// <summary>
+        /// 每次失去焦点、获得焦点时都会记录
+        /// 并且失焦时会Tick一下所有的Module
+        /// </summary>
+        /// <param name="hasFocus"></param>
         protected virtual void OnApplicationFocus(bool hasFocus)
         {
             m_HasFocus = hasFocus;
@@ -491,10 +508,13 @@ namespace UnityEngine.EventSystems
 
         protected virtual void Update()
         {
+            //如果当前激活的EventSystem不是自己，那么不执行
             if (current != this)
                 return;
+            //Tick刷新一下每个输入模块
             TickModules();
 
+            //遍历InputModule，找到第一个支持、并且激活有效的Module，并且把当前的InputModule切换到该Module
             bool changedModule = false;
             var systemInputModulesCount = m_SystemInputModules.Count;
             for (var i = 0; i < systemInputModulesCount; i++)
@@ -504,6 +524,7 @@ namespace UnityEngine.EventSystems
                 {
                     if (m_CurrentInputModule != module)
                     {
+                        //切换module，老的失活、新的激活
                         ChangeEventModule(module);
                         changedModule = true;
                     }
@@ -511,6 +532,7 @@ namespace UnityEngine.EventSystems
                 }
             }
 
+            //如果上一步没有发现可用的InputModule，那么就不管是不是激活了，找到第一个支持的Module并激活
             // no event module set... set the first valid one...
             if (m_CurrentInputModule == null)
             {
@@ -526,10 +548,13 @@ namespace UnityEngine.EventSystems
                 }
             }
 
+            //如果没有切换Module、并且当前的Module不为空，就调用它的Process接口
+            //也就是说如果该帧切换了Module，那么不会调用Process
             if (!changedModule && m_CurrentInputModule != null)
                 m_CurrentInputModule.Process();
 
 #if UNITY_EDITOR
+            //编辑器下，如果有多个EventSystem会报Warnning，因为多个EventSystem没什么作用
             if (Application.isPlaying)
             {
                 int eventSystemCount = 0;
@@ -545,14 +570,21 @@ namespace UnityEngine.EventSystems
 #endif
         }
 
+        /// <summary>
+        /// 切换到InputModule列表中第一个支持的、并且激活有效的Module
+        /// 如果正在使用的Module不为空，那么让它失活
+        /// </summary>
+        /// <param name="module"></param>
         private void ChangeEventModule(BaseInputModule module)
         {
             if (m_CurrentInputModule == module)
                 return;
 
+            //老的失活
             if (m_CurrentInputModule != null)
                 m_CurrentInputModule.DeactivateModule();
 
+            //新的激活
             if (module != null)
                 module.ActivateModule();
             m_CurrentInputModule = module;

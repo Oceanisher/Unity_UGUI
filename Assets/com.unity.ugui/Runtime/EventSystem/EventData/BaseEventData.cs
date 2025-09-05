@@ -2,9 +2,11 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// A class that can be used for sending simple events via the event system.
+    /// UI事件抽象基类
     /// </summary>
     public abstract class AbstractEventData
     {
+        //用于标记是否已经处理中，防止重复处理
         protected bool m_Used;
 
         /// <summary>
@@ -37,9 +39,11 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// A class that contains the base event data that is common to all event types in the new EventSystem.
+    /// UI事件基类
     /// </summary>
     public class BaseEventData : AbstractEventData
     {
+        //事件系统
         private readonly EventSystem m_EventSystem;
         public BaseEventData(EventSystem eventSystem)
         {
@@ -48,6 +52,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// >A reference to the BaseInputModule that sent this event.
+        /// 输入组件
         /// </summary>
         public BaseInputModule currentInputModule
         {
@@ -56,6 +61,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The object currently considered selected by the EventSystem.
+        /// 当前选择的GO
         /// </summary>
         public GameObject selectedObject
         {

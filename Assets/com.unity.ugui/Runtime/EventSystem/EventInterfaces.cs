@@ -2,6 +2,7 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// Base class that all EventSystem events inherit from.
+    /// 各类UI事件处理器的基类
     /// </summary>
     public interface IEventSystemHandler
     {
@@ -9,6 +10,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnPointerMove callbacks.
+    /// 指针移动事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -23,6 +25,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnPointerEnter callbacks.
+    /// 指针进入事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -37,6 +40,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnPointerExit callbacks.
+    /// 指针离开事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -51,6 +55,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnPointerDown callbacks.
+    /// 指针按下事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -65,6 +70,8 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnPointerUp callbacks.
+    /// 指针松开事件处理器
+    /// 要接受指针松开事件，必须接受指针按下事件
     /// Note: In order to receive OnPointerUp callbacks, you must also implement the EventSystems.IPointerDownHandler|IPointerDownHandler interface
     /// </summary>
     /// <remarks>
@@ -80,6 +87,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnPointerClick callbacks.
+    /// 指针点击事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -116,6 +124,8 @@ namespace UnityEngine.EventSystems
     /// <summary>
     /// Interface to implement if you wish to receive OnBeginDrag callbacks.
     /// Note: You need to implement IDragHandler in addition to IBeginDragHandler.
+    /// 拖拽开始事件处理器
+    /// 还需要实现拖拽事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -130,6 +140,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnInitializePotentialDrag callbacks.
+    /// 按下还没开始拖拽的时候的事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -144,6 +155,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnDrag callbacks.
+    /// 拖拽事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -246,6 +258,7 @@ namespace UnityEngine.EventSystems
     /// <summary>
     /// Interface to implement if you wish to receive OnEndDrag callbacks.
     /// Note: You need to implement IDragHandler in addition to IEndDragHandler.
+    /// 拖拽结束事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -260,6 +273,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnDrop callbacks.
+    /// 放下事件处理器
     /// </summary>
     /// <example>
     /// <code>
@@ -293,6 +307,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnScroll callbacks.
+    /// 滚轮滚动事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -307,6 +322,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnUpdateSelected callbacks.
+    /// 更新所选对象事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -337,6 +353,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnSelect callbacks.
+    /// 选择对象时的事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -348,6 +365,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnDeselect callbacks.
+    /// 取消选择对象时的事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -362,6 +380,8 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnMove callbacks.
+    /// 按下上下左右键时的事件处理器
+    /// 这时候就没有对象了，事件里只是按键数据
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -376,6 +396,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnSubmit callbacks.
+    /// 按下回车键时的事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
@@ -387,6 +408,7 @@ namespace UnityEngine.EventSystems
 
     /// <summary>
     /// Interface to implement if you wish to receive OnCancel callbacks.
+    /// 按下取消键时的事件处理器
     /// </summary>
     /// <remarks>
     /// Criteria for this event is implementation dependent. For example see StandAloneInputModule.
