@@ -21,8 +21,10 @@ namespace UnityEngine.EventSystems
     /// </remarks>
     public class EventSystem : UIBehaviour
     {
+        //存储当前GO上存在的所有激活的Module，Module通过UpdateModule接口自行注册、反注册
         private List<BaseInputModule> m_SystemInputModules = new List<BaseInputModule>();
 
+        //当前使用的Module
         private BaseInputModule m_CurrentInputModule;
 
         //EventSystem列表，在Enable的时候会向该列表中添加自己、Disable的时候取消
@@ -30,6 +32,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Return the current EventSystem.
+        /// 获取当前的EventSystem
+        /// 只返回第一个，所以多个EventSystem是没用的
         /// </summary>
         public static EventSystem current
         {
@@ -90,6 +94,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Only one object can be selected at a time. Think: controller-selected button.
+        /// 第一个被选择的物体
+        /// 没有赋值，默认是空的，应该是可以在业务上自定义
         /// </summary>
         public GameObject firstSelectedGameObject
         {
@@ -99,6 +105,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The GameObject currently considered active by the EventSystem.
+        /// 当前选中的物体
         /// </summary>
         public GameObject currentSelectedGameObject
         {
@@ -129,6 +136,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Recalculate the internal list of BaseInputModules.
+        /// 被InputModule调用，每次Module的Enable、Disable都会调用一次，更新Module列表
+        /// 会把未激活的Module剔除出去
         /// </summary>
         public void UpdateModules()
         {
