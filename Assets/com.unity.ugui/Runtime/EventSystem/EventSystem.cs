@@ -82,6 +82,7 @@ namespace UnityEngine.EventSystems
             set { m_DragThreshold = value; }
         }
 
+        //当前选中的GO
         private GameObject m_CurrentSelected;
 
         /// <summary>
@@ -118,6 +119,7 @@ namespace UnityEngine.EventSystems
             get { return null; }
         }
 
+        //当前是否是获取了焦点的
         private bool m_HasFocus = true;
 
         /// <summary>
@@ -152,6 +154,9 @@ namespace UnityEngine.EventSystems
             }
         }
 
+        //选中保护，当前是否已经选中了一个对象，防止重复选中
+        //是用来在切换选择对象的处理中的变量，防止切换过程被打断
+        //切换完之后就置为false了
         private bool m_SelectionGuard;
 
         /// <summary>
@@ -164,17 +169,21 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Set the object as selected. Will send an OnDeselect the the old selected object and OnSelect to the new selected object.
+        /// 设置一个GO为当前选中的对象
         /// </summary>
         /// <param name="selected">GameObject to select.</param>
         /// <param name="pointer">Associated EventData.</param>
         public void SetSelectedGameObject(GameObject selected, BaseEventData pointer)
         {
+            //如果当前已经在切换选中对象的处理中，那么报错，因为还没处理完
             if (m_SelectionGuard)
             {
                 Debug.LogError("Attempting to select " + selected +  "while already selecting an object.");
                 return;
             }
 
+            //如果没选中，那么设置新的选择对象
+            //但是如果当前选中的、跟传入的对象一致，那么不处理
             m_SelectionGuard = true;
             if (selected == m_CurrentSelected)
             {
@@ -182,13 +191,16 @@ namespace UnityEngine.EventSystems
                 return;
             }
 
+            //对老对象执行取消选中事件
             // Debug.Log("Selection: new (" + selected + ") old (" + m_CurrentSelected + ")");
             ExecuteEvents.Execute(m_CurrentSelected, pointer, ExecuteEvents.deselectHandler);
             m_CurrentSelected = selected;
+            //对新对象执行选中事件
             ExecuteEvents.Execute(m_CurrentSelected, pointer, ExecuteEvents.selectHandler);
             m_SelectionGuard = false;
         }
 
+        //基础事件对象，只有一个
         private BaseEventData m_DummyData;
         private BaseEventData baseEventDataCache
         {
@@ -210,6 +222,12 @@ namespace UnityEngine.EventSystems
             SetSelectedGameObject(selected, baseEventDataCache);
         }
 
+        /// <summary>
+        /// 射线命中比较
+        /// </summary>
+        /// <param name="lhs"></param>
+        /// <param name="rhs"></param>
+        /// <returns></returns>
         private static int RaycastComparer(RaycastResult lhs, RaycastResult rhs)
         {
             if (lhs.module != rhs.module)
@@ -267,6 +285,7 @@ namespace UnityEngine.EventSystems
             return lhs.index.CompareTo(rhs.index);
         }
 
+        //射线命中比较委托，用于对射线结果进行排序
         private static readonly Comparison<RaycastResult> s_RaycastComparer = RaycastComparer;
 
         /// <summary>
@@ -291,6 +310,7 @@ namespace UnityEngine.EventSystems
                 module.Raycast(eventData, raycastResults);
             }
 
+            //对射线命中结果进行排序
             raycastResults.Sort(s_RaycastComparer);
         }
 
