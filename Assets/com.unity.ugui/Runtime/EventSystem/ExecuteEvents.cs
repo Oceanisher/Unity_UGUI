@@ -244,7 +244,17 @@ namespace UnityEngine.EventSystems
                 t = t.parent;
             }
         }
-
+        
+        /// <summary>
+        /// UI事件执行
+        /// 根据T类型，去GO上找对应类型的Handler，并挨个执行事件
+        /// 找得到返回true，找不到对应类型的Handler返回false
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="eventData"></param>
+        /// <param name="functor"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public static bool Execute<T>(GameObject target, BaseEventData eventData, EventFunction<T> functor) where T : IEventSystemHandler
         {
             var internalHandlers = ListPool<IEventSystemHandler>.Get();
@@ -315,6 +325,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Get the specified object's event event.
+        /// 从GO上找T类型的Handler，并把找到的Handler写入到列表参数中
+        /// GO必须是Active的才行
         /// </summary>
         private static void GetEventList<T>(GameObject go, IList<IEventSystemHandler> results) where T : IEventSystemHandler
         {

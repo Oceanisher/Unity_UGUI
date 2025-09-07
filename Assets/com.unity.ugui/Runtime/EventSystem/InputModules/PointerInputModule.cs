@@ -6,6 +6,8 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// A BaseInputModule for pointer input.
+    /// 指针类型输入模块基类
+    /// 触摸、鼠标或者手柄输入模块都是继承自该类
     /// </summary>
     public abstract class PointerInputModule : BaseInputModule
     {

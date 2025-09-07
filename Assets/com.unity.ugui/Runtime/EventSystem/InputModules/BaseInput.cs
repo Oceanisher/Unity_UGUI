@@ -35,6 +35,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Interface to Input.mousePresent. Can be overridden to provide custom input instead of using the Input class.
+        /// 当前是否有鼠标设备连接上
         /// </summary>
         public virtual bool mousePresent
         {
@@ -93,6 +94,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Interface to Input.touchCount. Can be overridden to provide custom input instead of using the Input class.
+        /// 当前触控设备数量
         /// </summary>
         public virtual int touchCount
         {

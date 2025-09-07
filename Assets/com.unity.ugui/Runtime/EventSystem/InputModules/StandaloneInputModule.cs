@@ -153,9 +153,14 @@ namespace UnityEngine.EventSystems
             set { m_CancelButton = value; }
         }
 
+        /// <summary>
+        /// 在失去焦点时，是否要忽略事件
+        /// </summary>
+        /// <returns></returns>
         private bool ShouldIgnoreEventsOnNoFocus()
         {
 #if UNITY_EDITOR
+            //编辑器下，如果是用的某个客户端包、而不是Editor，那么在失去焦点时也不会忽略事件
             return !UnityEditor.EditorApplication.isRemoteConnected;
 #else
             return true;
@@ -267,17 +272,23 @@ namespace UnityEngine.EventSystems
             ClearSelection();
         }
 
+        /// <summary>
+        /// 被EventSystem每帧调用
+        /// </summary>
         public override void Process()
         {
+            //如果失去焦点、且在失去焦点时不影响事件，那么跳过
             if (!eventSystem.isFocused && ShouldIgnoreEventsOnNoFocus())
                 return;
 
+            //是否在该帧对选中的GO发送了更新事件
             bool usedEvent = SendUpdateEventToSelectedObject();
 
             // case 1004066 - touch / mouse events should be processed before navigation events in case
             // they change the current selected gameobject and the submit button is a touch / mouse button.
 
             // touch needs to take precedence because of the mouse emulation layer
+            //如果没有触控事件、并且有鼠标设备，那么Tick一下鼠标事件
             if (!ProcessTouchEvents() && input.mousePresent)
                 ProcessMouseEvent();
 
@@ -291,12 +302,17 @@ namespace UnityEngine.EventSystems
             }
         }
 
+        /// <summary>
+        /// 处理触控事件
+        /// </summary>
+        /// <returns>如果没有任何触控设备，那么返回false</returns>
         private bool ProcessTouchEvents()
         {
             for (int i = 0; i < input.touchCount; ++i)
             {
                 Touch touch = input.GetTouch(i);
 
+                //跳过非直接接触的触控设备
                 if (touch.type == TouchType.Indirect)
                     continue;
 
@@ -568,6 +584,10 @@ namespace UnityEngine.EventSystems
             }
         }
 
+        /// <summary>
+        /// 如果当前有选中的GO，那么每帧都会给它调用IUpdateSelectedHandler
+        /// </summary>
+        /// <returns></returns>
         protected bool SendUpdateEventToSelectedObject()
         {
             if (eventSystem.currentSelectedGameObject == null)

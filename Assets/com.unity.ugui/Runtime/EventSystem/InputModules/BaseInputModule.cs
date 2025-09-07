@@ -6,6 +6,8 @@ namespace UnityEngine.EventSystems
     [RequireComponent(typeof(EventSystem))]
     /// <summary>
     /// A base module that raises events and sends them to GameObjects.
+    /// 输入模块，要跟EventSystem组件放在同一个GO上
+    /// 生成事件、发送事件
     /// </summary>
     /// <remarks>
     /// An Input Module is a component of the EventSystem that is responsible for raising events and sending them to GameObjects for handling. The BaseInputModule is a class that all Input Modules in the EventSystem inherit from. Examples of provided modules are TouchInputModule and StandaloneInputModule, if these are inadequate for your project you can create your own by extending from the BaseInputModule.
@@ -102,6 +104,9 @@ namespace UnityEngine.EventSystems
             get { return m_EventSystem; }
         }
 
+        /// <summary>
+        /// Enable时让EventSystem重新刷新Module列表
+        /// </summary>
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -109,6 +114,9 @@ namespace UnityEngine.EventSystems
             m_EventSystem.UpdateModules();
         }
 
+        /// <summary>
+        /// Disable时让EventSystem重新刷新Module列表
+        /// </summary>
         protected override void OnDisable()
         {
             m_EventSystem.UpdateModules();
@@ -117,11 +125,13 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Process the current tick for the module.
+        /// 被EventSystem每帧调用
         /// </summary>
         public abstract void Process();
 
         /// <summary>
         /// Return the first valid RaycastResult.
+        /// 找到射线列表中第一个GO有效的射线结果
         /// </summary>
         protected static RaycastResult FindFirstRaycast(List<RaycastResult> candidates)
         {
@@ -138,6 +148,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Given an input movement, determine the best MoveDirection.
+        /// 传入一个XY坐标，返回一个最佳移动方向
+        /// 主要是触控和摇杆使用
         /// </summary>
         /// <param name="x">X movement.</param>
         /// <param name="y">Y movement.</param>
@@ -148,16 +160,20 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Given an input movement, determine the best MoveDirection.
+        /// 传入一个XY坐标，返回一个最佳移动方向，只返回4方向的移动
+        /// 主要是触控和摇杆使用
         /// </summary>
         /// <param name="x">X movement.</param>
         /// <param name="y">Y movement.</param>
-        /// <param name="deadZone">Dead zone.</param>
+        /// <param name="deadZone">Dead zone.死区是指用户触摸到的最小距离后才能激活摇杆</param>
         protected static MoveDirection DetermineMoveDirection(float x, float y, float deadZone)
         {
+            //如果移动距离在死区内，那么不响应
             // if vector is too small... just return
             if (new Vector2(x, y).sqrMagnitude < deadZone * deadZone)
                 return MoveDirection.None;
 
+            //主要看XY哪个大，然后看大的那个的方向
             if (Mathf.Abs(x) > Mathf.Abs(y))
             {
                 return x > 0 ? MoveDirection.Right : MoveDirection.Left;
@@ -168,6 +184,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Given 2 GameObjects, return a common root GameObject (or null).
+        /// 找到2个GO的共同根节点，最近的根节点
         /// </summary>
         /// <param name="g1">GameObject to compare</param>
         /// <param name="g2">GameObject to compare</param>

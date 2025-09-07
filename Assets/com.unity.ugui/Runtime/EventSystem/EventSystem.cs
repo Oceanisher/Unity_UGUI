@@ -161,6 +161,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Returns true if the EventSystem is already in a SetSelectedGameObject.
+        /// 同 m_SelectionGuard
         /// </summary>
         public bool alreadySelecting
         {
@@ -215,6 +216,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Set the object as selected. Will send an OnDeselect the the old selected object and OnSelect to the new selected object.
+        /// 设置选择的GO
         /// </summary>
         /// <param name="selected">GameObject to select.</param>
         public void SetSelectedGameObject(GameObject selected)
@@ -230,6 +232,7 @@ namespace UnityEngine.EventSystems
         /// <returns></returns>
         private static int RaycastComparer(RaycastResult lhs, RaycastResult rhs)
         {
+            //如果InputModule不同，那么先进行摄像机属性的排序
             if (lhs.module != rhs.module)
             {
                 var lhsEventCamera = lhs.module.eventCamera;
@@ -252,6 +255,8 @@ namespace UnityEngine.EventSystems
                     return rhs.module.renderOrderPriority.CompareTo(lhs.module.renderOrderPriority);
             }
 
+            //渲染排序
+            //先根据渲染Layer排序
             // Renderer sorting
             if (lhs.sortingLayer != rhs.sortingLayer)
             {
@@ -261,17 +266,21 @@ namespace UnityEngine.EventSystems
                 return rid.CompareTo(lid);
             }
 
+            //再根据渲染Order排序
             if (lhs.sortingOrder != rhs.sortingOrder)
                 return rhs.sortingOrder.CompareTo(lhs.sortingOrder);
 
+            //深度比较仅在两者都归属于同一个Canvas时才有意义
             // comparing depth only makes sense if the two raycast results have the same root canvas (case 912396)
             if (lhs.depth != rhs.depth && lhs.module.rootRaycaster == rhs.module.rootRaycaster)
                 return rhs.depth.CompareTo(lhs.depth);
 
+            //距离排序
             if (lhs.distance != rhs.distance)
                 return lhs.distance.CompareTo(rhs.distance);
 
             #if PACKAGE_PHYSICS2D
+            //2D渲染排序
 			// Sorting group
             if (lhs.sortingGroupID != SortingGroup.invalidSortingGroupID && rhs.sortingGroupID != SortingGroup.invalidSortingGroupID)
             {
