@@ -5,6 +5,9 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// Base class for any RayCaster.
+    /// 射线基类
+    ///
+    /// 用于判断光标是否在某个元素上，默认有PhysicsRaycaster, Physics2DRaycaster, GraphicRaycaster(UI专用)
     /// </summary>
     /// <remarks>
     /// A Raycaster is responsible for raycasting against scene elements to determine if the cursor is over them. Default Raycasters include PhysicsRaycaster, Physics2DRaycaster, GraphicRaycaster.
@@ -16,6 +19,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Raycast against the scene.
+        /// 发出射线
         /// </summary>
         /// <param name="eventData">Current event data.</param>
         /// <param name="resultAppendList">List of hit Objects.</param>
@@ -23,6 +27,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The camera that will generate rays for this raycaster.
+        /// 该射线使用的相机
         /// </summary>
         public abstract Camera eventCamera { get; }
 
@@ -34,6 +39,9 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Priority of the raycaster based upon sort order.
+        /// 射线的优先级
+        /// 数字越小、优先级越高
+        /// 通常Graphic射线具有最高优先级、物理射线优先级较低
         /// </summary>
         public virtual int sortOrderPriority
         {

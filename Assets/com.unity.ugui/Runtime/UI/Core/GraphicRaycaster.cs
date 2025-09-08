@@ -10,6 +10,7 @@ namespace UnityEngine.UI
     [RequireComponent(typeof(Canvas))]
     /// <summary>
     /// A derived BaseRaycaster to raycast against Graphic elements.
+    /// 对于UI Graphic使用的射线类
     /// </summary>
     public class GraphicRaycaster : BaseRaycaster
     {
@@ -17,6 +18,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Type of raycasters to check against to check for canvas blocking elements.
+        /// 是否屏蔽某个类型的UI元素
         /// </summary>
         public enum BlockingObjects
         {
@@ -40,6 +42,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Priority of the raycaster based upon sort order.
+        /// 排序优先级
+        /// 数字越小、优先级越高
+        /// 通常Graphic射线具有最高优先级、物理射线优先级较低
+        ///
         /// </summary>
         /// <returns>
         /// The sortOrder priority.
@@ -48,6 +54,7 @@ namespace UnityEngine.UI
         {
             get
             {
+                //对于Overlay的Canvas，优先级返回Canvas本身的排序（Overlay的Canvas的sortOrderPriority=0）
                 // We need to return the sorting order here as distance will all be 0 for overlay.
                 if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
                     return canvas.sortingOrder;
@@ -58,6 +65,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Priority of the raycaster based upon render order.
+        /// 渲染优先级
         /// </summary>
         /// <returns>
         /// The renderOrder priority.
@@ -66,6 +74,7 @@ namespace UnityEngine.UI
         {
             get
             {
+                //对于Overlay的Canvas，优先级返回Canvas本身的排序（Overlay的Canvas的sortOrderPriority=0）
                 // We need to return the sorting order here as distance will all be 0 for overlay.
                 if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
                     return canvas.rootCanvas.renderOrder;
