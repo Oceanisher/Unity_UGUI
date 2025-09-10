@@ -11,6 +11,7 @@ namespace UnityEngine.UI
     /// <summary>
     /// A derived BaseRaycaster to raycast against Graphic elements.
     /// 对于UI Graphic使用的射线类
+    /// 与Canvas同在一个GO上，所以是每个GraphicRaycaster类都只检测自己的Canvas
     /// </summary>
     public class GraphicRaycaster : BaseRaycaster
     {
@@ -18,7 +19,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Type of raycasters to check against to check for canvas blocking elements.
-        /// 是否屏蔽某个类型的UI元素
+        /// 射线检测可以被哪些物体阻断，也就是不能穿透
+        /// 比如设置上TwoD的话，那么UI元素前面如果放置了带有2D碰撞体的元素，那么将阻挡射线
         /// </summary>
         public enum BlockingObjects
         {
@@ -113,6 +115,9 @@ namespace UnityEngine.UI
         protected GraphicRaycaster()
         {}
 
+        /// <summary>
+        /// 获取射线类脚本所在GO上的Canvas
+        /// </summary>
         private Canvas canvas
         {
             get
@@ -129,14 +134,17 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Perform the raycast against the list of graphics associated with the Canvas.
+        /// 发出射线，对于本射线类所在的Canvas进行射线检测
         /// </summary>
         /// <param name="eventData">Current event data</param>
         /// <param name="resultAppendList">List of hit objects to append new results to.</param>
         public override void Raycast(PointerEventData eventData, List<RaycastResult> resultAppendList)
         {
+            //没有Canvas，就不执行射线检测
             if (canvas == null)
                 return;
 
+            //获取本Canvas下所有可以接受射线检测的元素
             var canvasGraphics = GraphicRegistry.GetRaycastableGraphicsForCanvas(canvas);
             if (canvasGraphics == null || canvasGraphics.Count == 0)
                 return;
@@ -144,19 +152,25 @@ namespace UnityEngine.UI
             int displayIndex;
             var currentEventCamera = eventCamera; // Property can call Camera.main, so cache the reference
 
+            //如果是Overlay模式，或者事件相机是空的，那么目标显示器是Canvas上的显示器
             if (canvas.renderMode == RenderMode.ScreenSpaceOverlay || currentEventCamera == null)
                 displayIndex = canvas.targetDisplay;
+            //否则是拿取相机上的目标显示器
             else
                 displayIndex = currentEventCamera.targetDisplay;
 
+            //获取经过调整计算后的事件位置
             Vector3 eventPosition = MultipleDisplayUtilities.GetRelativeMousePositionForRaycast(eventData);
 
             // Discard events that are not part of this display so the user does not interact with multiple displays at once.
+            //如果事件不是在当前屏幕上，那么不处理。也就是说多屏幕下，切换屏幕的话，事件会有一次失效。
             if ((int) eventPosition.z != displayIndex)
                 return;
 
             // Convert to view space
+            //视口空间坐标，屏幕左下角为(0,0)，右上角为(1,1)，也就是归一化的屏幕空间位置
             Vector2 pos;
+            //如果没有事件相机，那么视口空间坐标直接计算出来
             if (currentEventCamera == null)
             {
                 // Multiple display support only when not the main display. For display 0 the reported
@@ -177,17 +191,21 @@ namespace UnityEngine.UI
                 }
                 pos = new Vector2(eventPosition.x / w, eventPosition.y / h);
             }
+            //有相机，那么调用相机的ScreenToViewportPoint接口
             else
                 pos = currentEventCamera.ScreenToViewportPoint(eventPosition);
 
+            //如果计算出来的视口坐标超出了归一化的坐标区域，那么不处理
             // If it's outside the camera's viewport, do nothing
             if (pos.x < 0f || pos.x > 1f || pos.y < 0f || pos.y > 1f)
                 return;
 
             float hitDistance = float.MaxValue;
 
+            //射线，内部包含射线原点坐标、射线方向
             Ray ray = new Ray();
 
+            //如果有相机，那么直接使用相机将事件坐标转换为射线
             if (currentEventCamera != null)
                 ray = currentEventCamera.ScreenPointToRay(eventPosition);
 
@@ -296,6 +314,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The camera that will generate rays for this raycaster.
+        /// UI射线使用的相机
+        /// 如果渲染模式是Overlay、或者模式是Camera但是又没有设置相机，那么直接返回null
+        /// 其他模式、或者Camera模式下有相机，那么返回Canvas上设置的相机，
+        /// 否则使用主相机
         /// </summary>
         /// <returns>
         /// - Null if Camera mode is ScreenSpaceOverlay or ScreenSpaceCamera and has no camera.

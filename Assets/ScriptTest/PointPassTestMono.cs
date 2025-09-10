@@ -19,4 +19,12 @@ public class PointPassTestMono : MonoBehaviour, IPointerEnterHandler, IPointerEx
     {
         Debug.Log("OnPointerExit");
     }
+
+    /// <summary>
+    /// 点击退出程序
+    /// </summary>
+    public void OnClickExit()
+    {
+        Application.Quit();
+    }
 }

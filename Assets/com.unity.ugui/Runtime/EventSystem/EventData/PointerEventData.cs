@@ -133,6 +133,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Current pointer position.
+        /// Canvas空间中的相对坐标
         /// </summary>
         public Vector2 position { get; set; }
 

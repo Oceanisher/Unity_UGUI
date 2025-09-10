@@ -203,6 +203,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Retrieves the list of Graphics that are raycastable and associated with a Canvas.
+        /// 获取某个Canvas下所有可以接受射线检测的元素
         /// </summary>
         /// <param name="canvas">The Canvas to search</param>
         /// <returns>Returns a list of Graphics. Returns an empty list if no Graphics are associated with the specified Canvas.</returns>
