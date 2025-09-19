@@ -294,6 +294,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Execute the specified event on the first game object underneath the current touch.
+        /// 级联执行某个事件
+        /// 把Root物体下的所有子物体都遍历调用（包含Root），只要找到一个能调用的，就直接调用并且返回
         /// </summary>
         private static readonly List<Transform> s_InternalTransformList = new List<Transform>(30);
 

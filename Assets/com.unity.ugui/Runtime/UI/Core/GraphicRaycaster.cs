@@ -85,23 +85,28 @@ namespace UnityEngine.UI
             }
         }
 
+        //否忽略非正面的图形，用于射线检测时忽略背面UI的射线命中检测
         [FormerlySerializedAs("ignoreReversedGraphics")]
         [SerializeField]
         private bool m_IgnoreReversedGraphics = true;
+        //是否设置2D或者3D物体可阻挡射线检测
         [FormerlySerializedAs("blockingObjects")]
         [SerializeField]
         private BlockingObjects m_BlockingObjects = BlockingObjects.None;
 
         /// <summary>
         /// Whether Graphics facing away from the raycaster are checked for raycasts.
+        /// 是否忽略非正面的图形，用于射线检测时忽略背面UI的射线命中检测
         /// </summary>
         public bool ignoreReversedGraphics { get {return m_IgnoreReversedGraphics; } set { m_IgnoreReversedGraphics = value; } }
 
         /// <summary>
         /// The type of objects that are checked to determine if they block graphic raycasts.
+        /// 是否设置2D或者3D物体可阻挡射线检测
         /// </summary>
         public BlockingObjects blockingObjects { get {return m_BlockingObjects; } set { m_BlockingObjects = value; } }
 
+        //阻挡射线的Mask层级
         [SerializeField]
         protected LayerMask m_BlockingMask = kNoEventMaskSet;
 
@@ -130,6 +135,7 @@ namespace UnityEngine.UI
             }
         }
 
+        //射线命中的UI缓存
         [NonSerialized] private List<Graphic> m_RaycastResults = new List<Graphic>();
 
         /// <summary>
@@ -200,6 +206,7 @@ namespace UnityEngine.UI
             if (pos.x < 0f || pos.x > 1f || pos.y < 0f || pos.y > 1f)
                 return;
 
+            //射线命中时点距离Ray原点的距离，用于3D2D物体命中时的距离缓存
             float hitDistance = float.MaxValue;
 
             //射线，内部包含射线原点坐标、射线方向
@@ -209,18 +216,21 @@ namespace UnityEngine.UI
             if (currentEventCamera != null)
                 ray = currentEventCamera.ScreenPointToRay(eventPosition);
 
+            //如果Canvas的模式是Overlay、并且有阻挡设置
             if (canvas.renderMode != RenderMode.ScreenSpaceOverlay && blockingObjects != BlockingObjects.None)
             {
                 float distanceToClipPlane = 100.0f;
 
                 if (currentEventCamera != null)
                 {
+                    //如果投影方向完全不是面向Z轴的，那么到切平面的距离设置为无穷大；否则，距离设置为摄像机远近屏幕的距离 / 投影方向Z的值
                     float projectionDirection = ray.direction.z;
                     distanceToClipPlane = Mathf.Approximately(0.0f, projectionDirection)
                         ? Mathf.Infinity
                         : Mathf.Abs((currentEventCamera.farClipPlane - currentEventCamera.nearClipPlane) / projectionDirection);
                 }
 #if PACKAGE_PHYSICS
+                //如果有3D物理阻挡设置，也就是说使用了3D物理包，那么需要检测该射线方向上是不是会命中物理碰撞盒
                 if (blockingObjects == BlockingObjects.ThreeD || blockingObjects == BlockingObjects.All)
                 {
                     if (ReflectionMethodsCache.Singleton.raycast3D != null)
@@ -234,11 +244,13 @@ namespace UnityEngine.UI
                 }
 #endif
 #if PACKAGE_PHYSICS2D
+                //如果有2D物理阻挡设置，也就是说使用了2D物理包，那么需要检测该射线方向上是不是会命中物理碰撞盒
                 if (blockingObjects == BlockingObjects.TwoD || blockingObjects == BlockingObjects.All)
                 {
                     if (ReflectionMethodsCache.Singleton.raycast2D != null)
                     {
                         var hits = ReflectionMethodsCache.Singleton.getRayIntersectionAll(ray, distanceToClipPlane, (int)m_BlockingMask);
+                        //获取第一个命中的物体的距离
                         if (hits.Length > 0)
                             hitDistance = hits[0].distance;
                     }
@@ -248,30 +260,39 @@ namespace UnityEngine.UI
 
             m_RaycastResults.Clear();
 
+            //实际发出射线并得到返回所有命中的UI结果
             Raycast(canvas, currentEventCamera, eventPosition, canvasGraphics, m_RaycastResults);
 
+            //遍历命中的UI结果，看是否是需要被剔除出去
             int totalCount = m_RaycastResults.Count;
             for (var index = 0; index < totalCount; index++)
             {
                 var go = m_RaycastResults[index].gameObject;
                 bool appendGraphic = true;
 
+                //如果忽略背面UI，那么需要计算一下该UI是否正面面向射线方向，实际上就是看UI元素的方向与射线方向的夹角是否小于90度；使用点乘计算即可
                 if (ignoreReversedGraphics)
                 {
                     if (currentEventCamera == null)
                     {
+                        //如果没有相机，那么就用UI的朝向、和Vector3.forward做比较
                         // If we dont have a camera we know that we should always be facing forward
                         var dir = go.transform.rotation * Vector3.forward;
                         appendGraphic = Vector3.Dot(Vector3.forward, dir) > 0;
                     }
                     else
                     {
+                        //如果有相机，那么要和相机的朝向进行比较
+                        //相机的朝向，是相机的近切面中心、到UI中心的朝向；
+                        //这样如果近切面是0，那么就是等同于从相机原点发出的射线
+                        //如果近切面不为0，且UI小于近切面，也就是说UI没有在摄像机的照射范围内，那么照样计算出来的结果就是负的，就是需要被剔除的UI元素
                         // If we have a camera compare the direction against the cameras forward.
                         var cameraForward = currentEventCamera.transform.rotation * Vector3.forward * currentEventCamera.nearClipPlane;
                         appendGraphic = Vector3.Dot(go.transform.position - currentEventCamera.transform.position - cameraForward, go.transform.forward) >= 0;
                     }
                 }
 
+                //如果是确实命中的UI
                 if (appendGraphic)
                 {
                     float distance = 0;
@@ -282,6 +303,7 @@ namespace UnityEngine.UI
                         distance = 0;
                     else
                     {
+                        //如果UI在摄像机后面，那么剔除掉
                         // http://geomalgorithms.com/a06-_intersect-2.html
                         distance = (Vector3.Dot(transForward, trans.position - ray.origin) / Vector3.Dot(transForward, ray.direction));
 
@@ -290,9 +312,11 @@ namespace UnityEngine.UI
                             continue;
                     }
 
+                    //如果命中的UI在2D3D物体命中之后，那么剔除
                     if (distance >= hitDistance)
                         continue;
 
+                    //如果都剔除不了，那么放入到最终的命中结果中
                     var castResult = new RaycastResult
                     {
                         gameObject = go,
@@ -340,32 +364,41 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Perform a raycast into the screen and collect all graphics underneath it.
+        /// 在指定的Canvas中发出射线，并得到所有命中的UI结果，用来缓存的
         /// </summary>
         [NonSerialized] static readonly List<Graphic> s_SortedGraphics = new List<Graphic>();
         private static void Raycast(Canvas canvas, Camera eventCamera, Vector2 pointerPosition, IList<Graphic> foundGraphics, List<Graphic> results)
         {
             // Necessary for the event system
+            //每个可以接受射线的UI都进行检测
             int totalCount = foundGraphics.Count;
             for (int i = 0; i < totalCount; ++i)
             {
                 Graphic graphic = foundGraphics[i];
 
                 // -1 means it hasn't been processed by the canvas, which means it isn't actually drawn
+                //如果一个UI不接受射线、或者被剔除了、或者没有被绘制，那么跳过
+                //-1代表这个UI没有被canvas处理、没有真正进行绘制
                 if (!graphic.raycastTarget || graphic.canvasRenderer.cull || graphic.depth == -1)
                     continue;
 
+                //使用RectangleContainsScreenPoint接口，判断射线点的位置，有没有在这个UI的矩形范围内
                 if (!RectTransformUtility.RectangleContainsScreenPoint(graphic.rectTransform, pointerPosition, eventCamera, graphic.raycastPadding))
                     continue;
 
+                //如果UI已经超出相机的远切平面了，那么剔除
+                //但是感觉这样是有问题的，如果UI有旋转，可能会有一部分进入相机的范围内
                 if (eventCamera != null && eventCamera.WorldToScreenPoint(graphic.rectTransform.position).z > eventCamera.farClipPlane)
                     continue;
 
+                //UI自己再判断下是否能够被射线命中，主要是
                 if (graphic.Raycast(pointerPosition, eventCamera))
                 {
                     s_SortedGraphics.Add(graphic);
                 }
             }
 
+            //对射线检测结果进行排序，按照深度反向排序。因为视觉上越靠前的UI，深度越高。
             s_SortedGraphics.Sort((g1, g2) => g2.depth.CompareTo(g1.depth));
             totalCount = s_SortedGraphics.Count;
             for (int i = 0; i < totalCount; ++i)

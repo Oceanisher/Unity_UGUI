@@ -63,6 +63,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Should the EventSystem allow navigation events (move / submit / cancel).
+        /// 是否允许导航事件
+        /// 也就是说使用键盘(WASD等)、或者控制器的导航操作等触发UI交互
         /// </summary>
         public bool sendNavigationEvents
         {
@@ -75,6 +77,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The soft area for dragging in pixels.
+        /// 拖拽移动的移动距离阈值，像素大小
         /// </summary>
         public int pixelDragThreshold
         {

@@ -11,6 +11,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Reset the event.
+        /// 重置变量
         /// </summary>
         public virtual void Reset()
         {

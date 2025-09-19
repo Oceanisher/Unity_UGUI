@@ -74,7 +74,7 @@ namespace UnityEngine.EventSystems
         public GameObject pointerEnter { get; set; }
 
         // The object that received OnPointerDown
-        //接收到指针按下事件的GO
+        //接收按下事件的物体，有可能不是当前物体
         private GameObject m_PointerPress;
 
         /// <summary>
@@ -85,7 +85,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The object that the press happened on even if it can not handle the press event.
-        /// 指针按下的GO，即使这个GO本身并不接收Press事件
+        /// 指针按下的原始GO，等同于射线命中后的最近的GO
+        /// 即使这个GO本身并不接收Press事件
         /// </summary>
         public GameObject rawPointerPress { get; set; }
 
@@ -97,7 +98,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The object that should receive the 'OnPointerClick' event.
-        /// 接收到指针点击的GO
+        /// 接收到指针Click的GO
         /// </summary>
         public GameObject pointerClick { get; set; }
 
@@ -109,15 +110,17 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// RaycastResult associated with the pointer press.
-        /// 指针点击时的射线结果
+        /// 指针按下时的射线结果
         /// </summary>
         public RaycastResult pointerPressRaycast { get; set; }
 
-        //指针路过的GO列表
+        //指针路过悬停的GO列表
         public List<GameObject> hovered = new List<GameObject>();
 
         /// <summary>
         /// Is it possible to click this frame
+        /// 该帧有可能是点击
+        /// 因为一帧里可以是按下、释放、按下并释放，所以如果发现按下了，那么这里就是true，因为这一帧里有可能会释放
         /// </summary>
         public bool eligibleForClick { get; set; }
 
@@ -139,11 +142,14 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Pointer delta since last update.
+        /// 鼠标移动的Delta
         /// </summary>
         public Vector2 delta { get; set; }
 
         /// <summary>
         /// Position of the press.
+        /// 当该帧状态是按下时，按下的位置
+        /// 应该是只要一直是按下状态，那么每帧都会改变这个值
         /// </summary>
         public Vector2 pressPosition { get; set; }
 
@@ -162,11 +168,14 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The last time a click event was sent. Used for double click
+        /// 上一次点击时间
+        /// 用来判断是否进行了双击
         /// </summary>
         public float clickTime { get; set; }
 
         /// <summary>
         /// Number of clicks in a row.
+        /// Click次数
         /// </summary>
         /// <example>
         /// <code>
@@ -198,6 +207,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Should a drag threshold be used?
+        /// 是否需要使用拖拽阈值
+        /// 也就是说移动距离超过某个距离，才算是拖拽
         /// </summary>
         /// <remarks>
         /// If you do not want a drag threshold set this to false in IInitializePotentialDragHandler.OnInitializePotentialDrag.
@@ -206,17 +217,21 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Is a drag operation currently occuring.
+        /// 是否是拖拽中
         /// </summary>
         public bool dragging { get; set; }
 
         /// <summary>
         /// The EventSystems.PointerEventData.InputButton for this event.
+        /// 输入的按键类型，只有3个，左中右
+        /// 触控按键默认都设置为左按键
         /// </summary>
         public InputButton button { get; set; }
 
 
         /// <summary>
         /// The amount of pressure currently applied by a touch.
+        /// 触控时，当前按下的压力
         /// </summary>
         /// <remarks>
         /// If the device does not report pressure, the value of this property is 1.0f.
@@ -230,6 +245,7 @@ namespace UnityEngine.EventSystems
         public float tangentialPressure { get; set; }
         /// <summary>
         /// The angle of the stylus relative to the surface, in radians
+        /// 触笔相对于屏幕的弧度，0代表平行，π/2代表垂直
         /// </summary>
         /// <remarks>
         /// A value of 0 indicates that the stylus is parallel to the surface. A value of pi/2 indicates that it is perpendicular to the surface.
@@ -238,6 +254,7 @@ namespace UnityEngine.EventSystems
         public float altitudeAngle { get; set; }
         /// <summary>
         /// The angle of the stylus relative to the x-axis, in radians.
+        /// 触笔相对于X轴的弧度，0代表触笔指向X轴方向
         /// </summary>
         /// <remarks>
         /// A value of 0 indicates that the stylus is pointed along the x-axis of the device.
@@ -261,6 +278,8 @@ namespace UnityEngine.EventSystems
         public PenStatus penStatus { get; set; }
         /// <summary>
         /// An estimate of the radius of a touch.
+        /// 估计的触摸半径，也就是说能判断是用指尖按下的、还是用指腹按压的
+        /// 也就是按下的那个地方的区域半径大小，因为不像鼠标点击是一个像素点，触摸点击是一个区域
         /// </summary>
         /// <remarks>
         /// Add `radiusVariance` to get the maximum touch radius, subtract it to get the minimum touch radius.
@@ -269,6 +288,8 @@ namespace UnityEngine.EventSystems
         public Vector2 radius { get; set; }
         /// <summary>
         /// The accuracy of the touch radius.
+        /// 估计的触摸半径的方差
+        /// radius加上这个值就是最大触摸半径，减去这个值就是最小触摸半径
         /// </summary>
         /// <remarks>
         /// Add this value to the radius to get the maximum touch radius, subtract it to get the minimum touch radius.
@@ -276,10 +297,14 @@ namespace UnityEngine.EventSystems
         public Vector2 radiusVariance { get; set; }
         /// <summary>
         /// Specifies in the case of a pointer exit if the pointer has fully exited the area or if it has just entered a child.
+        /// 指针是完全退出原先悬停的区域，还是只是进入了一个新的子节点
+        /// 缓存值，每次遍历中每一次循环都会修改
         /// </summary>
         public bool fullyExited { get; set; }
         /// <summary>
         /// Specifies in the case of a pointer enter if the pointer has entered a new area or if it has just reentered a parent after leaving a child.
+        /// 是否是从一个子物体，进入到了父节点物体中
+        /// 缓存值，每次遍历中每一次循环都会修改
         /// </summary>
         public bool reentered { get; set; }
         /// <seealso cref="UnityEngine.UIElements.IPointerEvent" />
@@ -314,6 +339,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Is the pointer moving.
+        /// 鼠标是否移动过
         /// </summary>
         public bool IsPointerMoving()
         {
@@ -322,6 +348,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Is scroll being used on the input device.
+        /// 鼠标是否滚动过
         /// </summary>
         public bool IsScrolling()
         {
@@ -346,6 +373,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The GameObject that received the OnPointerDown.
+        /// 接收按下事件的物体，有可能不是当前物体
         /// </summary>
         public GameObject pointerPress
         {

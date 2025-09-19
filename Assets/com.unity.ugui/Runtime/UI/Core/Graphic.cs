@@ -973,9 +973,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// When a GraphicRaycaster is raycasting into the scene it does two things. First it filters the elements using their RectTransform rect. Then it uses this Raycast function to determine the elements hit by the raycast.
-        /// 射线检测接口
-        /// 首先，上层遍历时是取了某个Canvas下所有接受射线的元素。
-        /// 所以这里遍历到Canvas时就停止了，不会再往上找其他节点
+        /// UI自己进行的射线检测接口，是在被射线命中以后进行自我判断的接口
+        /// 之所以要自我检测一下，是因为有些UI可能有Mask，可能会影响命中结果
+        /// 如果持续往上遍历，找到的Canvas是overrideSorting的Canvas，那么就停止继续往上了，因为它是重写排序的Canvas，不会再受上层Canvas的Mask影响了
+        /// 如果Canvas不是重写排序的，那么就会一直往上持续遍历
         /// </summary>
         /// <param name="sp">Screen point being tested</param>
         /// <param name="eventCamera">Camera that is being used for the testing.</param>

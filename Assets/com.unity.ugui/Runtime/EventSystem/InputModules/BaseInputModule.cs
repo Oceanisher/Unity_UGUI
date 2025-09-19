@@ -38,11 +38,13 @@ namespace UnityEngine.EventSystems
     /// </example>
     public abstract class BaseInputModule : UIBehaviour
     {
+        //射线结果缓存
         [NonSerialized]
         protected List<RaycastResult> m_RaycastResultCache = new List<RaycastResult>();
 
         /// <summary>
         /// True if pointer hover events will be sent to the parent
+        /// 如果鼠标悬停事件需要发送给父节点，也就说悬停事件是否能够穿透
         /// </summary>
         [SerializeField] private bool m_SendPointerHoverToParent = true;
         //This is needed for testing
@@ -213,13 +215,21 @@ namespace UnityEngine.EventSystems
         // send exit events up to (but not including) the common root. Then send enter events up to
         // (but not including) the common root.
         // Send move events before exit, after enter, and on hovered objects when pointer data has changed.
+        // 处理鼠标对UI的悬停事件（进入、移动、退出）
+        //需要处理两种情况：悬停事件能否穿透
+        //1:如果能够穿透，那么就是从命中节点开始，逐步向上遍历，把所有节点都执行悬停事件；那么退出的节点，也是需要逐步向上遍历，到新老节点的公共父节点结束，所有节点全部执行退出
+        //2:如果不能穿透，那么就是从命中节点开始，逐步向上遍历，找到第一个能够接收悬停事件的对象就结束（中间所有的节点也需要执行）；那么退出节点，也是找到第一个接收悬停对象的结束，所有节点全部执行退出
         protected void HandlePointerExitAndEnter(PointerEventData currentPointerData, GameObject newEnterTarget)
         {
             // if we have no target / pointerEnter has been deleted
             // just send exit events to anything we are tracking
             // then exit
+            //如果没有新物体、或者之前没有进入事件
+            //这说明鼠标完全没有在可以接收悬停信息的UI上，因为每帧都会检测。所以如果没有新物体、或者没有当前的进入物体，那么就直接清空列表就可以了
             if (newEnterTarget == null || currentPointerData.pointerEnter == null)
             {
+                //对所有原来悬停的物体执行退出事件
+                //退出事件前先执行一遍Move事件
                 var hoveredCount = currentPointerData.hovered.Count;
                 for (var i = 0; i < hoveredCount; ++i)
                 {
@@ -228,8 +238,10 @@ namespace UnityEngine.EventSystems
                     ExecuteEvents.Execute(currentPointerData.hovered[i], currentPointerData, ExecuteEvents.pointerExitHandler);
                 }
 
+                //清空悬停列表
                 currentPointerData.hovered.Clear();
 
+                //如果没有新进入的物体，那么清空Enter的物体，并返回
                 if (newEnterTarget == null)
                 {
                     currentPointerData.pointerEnter = null;
@@ -237,9 +249,11 @@ namespace UnityEngine.EventSystems
                 }
             }
 
+            //如果新的进入物体没有变化
             // if we have not changed hover target
             if (currentPointerData.pointerEnter == newEnterTarget && newEnterTarget)
             {
+                //如果鼠标移动了，那么对所有已经悬停的物体执行鼠标移动事件
                 if (currentPointerData.IsPointerMoving())
                 {
                     var hoveredCount = currentPointerData.hovered.Count;
@@ -249,9 +263,13 @@ namespace UnityEngine.EventSystems
                 return;
             }
 
+            //如果有新进入的物体，并且新物体跟上一个进入的物体不一致，也就是说鼠标从一个UI移动到了另一个UI上
+            //找到新旧物体的共同最近根节点
             GameObject commonRoot = FindCommonRoot(currentPointerData.pointerEnter, newEnterTarget);
+            //找到新物体的父节点上的Exit处理器，如果没有这样的父节点的话，那这里就是空的
             GameObject pointerParent = ((Component)newEnterTarget.GetComponentInParent<IPointerExitHandler>())?.gameObject;
 
+            //如果有老的进入的物体，需要执行退出
             // and we already an entered object from last time
             if (currentPointerData.pointerEnter != null)
             {
@@ -260,33 +278,47 @@ namespace UnityEngine.EventSystems
                 // ** or when !m_SendPointerEnterToParent, stop when meeting a gameobject with an exit event handler
                 Transform t = currentPointerData.pointerEnter.transform;
 
+                //对老的物体，往上对父节点层层遍历
                 while (t != null)
                 {
                     // if we reach the common root break out!
+                    //如果遍历到了新老物体的共同父节点，并且悬停事件能够穿透，那么停止
+                    //因为相当于鼠标从一个子节点切换到了另一个子节点，所以退出就只是老的子节点到公共节点之前的所有节点退出即可。
                     if (m_SendPointerHoverToParent && commonRoot != null && commonRoot.transform == t)
                         break;
 
                     // if we reach a PointerExitEvent break out!
+                    //如果遍历到了新物体的有Exit处理器的父节点，并且悬停事件不能够穿透，那么停止
                     if (!m_SendPointerHoverToParent && pointerParent == t.gameObject)
                         break;
 
+                    //中间物体进行处理
+                    //是否是完全退出：如果向上遍历的物体还不是公共根节点、并且新老物体不一致，那么就是完全退出
                     currentPointerData.fullyExited = t.gameObject != commonRoot && currentPointerData.pointerEnter != newEnterTarget;
+                    //对中间物体执行移动、退出事件
                     ExecuteEvents.Execute(t.gameObject, currentPointerData, ExecuteEvents.pointerMoveHandler);
                     ExecuteEvents.Execute(t.gameObject, currentPointerData, ExecuteEvents.pointerExitHandler);
+                    //悬停列表删除中间物体
                     currentPointerData.hovered.Remove(t.gameObject);
 
+                    //继续向上遍历
                     if (m_SendPointerHoverToParent) t = t.parent;
 
+                    //如果已经到了公共节点了，那么停止
                     // if we reach the common root break out!
                     if (commonRoot != null && commonRoot.transform == t)
                         break;
 
+                    //继续向上遍历
                     if (!m_SendPointerHoverToParent) t = t.parent;
                 }
             }
 
+            //处理新进入的物体
+            //层层向上遍历
             // now issue the enter call up to but not including the common root
             var oldPointerEnter = currentPointerData.pointerEnter;
+            //设置当前进入的物体为新物体
             currentPointerData.pointerEnter = newEnterTarget;
             if (newEnterTarget != null)
             {
@@ -294,25 +326,32 @@ namespace UnityEngine.EventSystems
 
                 while (t != null)
                 {
+                    //是否是从一个子物体，重新进入到了父节点物体中
                     currentPointerData.reentered = t.gameObject == commonRoot && t.gameObject != oldPointerEnter;
                     // if we are sending the event to parent, they are already in hover mode at that point. No need to bubble up the event.
+                    //如果是悬停事件需要发送给父节点，并且是重新进入父节点，那么跳过
                     if (m_SendPointerHoverToParent && currentPointerData.reentered)
                         break;
 
+                    //对中间物体执行进入、移动事件，并且添加到悬停列表
                     ExecuteEvents.Execute(t.gameObject, currentPointerData, ExecuteEvents.pointerEnterHandler);
                     ExecuteEvents.Execute(t.gameObject, currentPointerData, ExecuteEvents.pointerMoveHandler);
                     currentPointerData.hovered.Add(t.gameObject);
 
+                    //如果不需要发送事件给父节点，并且该中间物体有Enter处理器，那么跳过
                     // stop when encountering an object with the pointerEnterHandler
                     if (!m_SendPointerHoverToParent && t.gameObject.GetComponent<IPointerEnterHandler>() != null)
                         break;
 
+                    //继续向上遍历
                     if (m_SendPointerHoverToParent) t = t.parent;
 
                     // if we reach the common root break out!
+                    //如果到达了公共父节点，那么跳过
                     if (commonRoot != null && commonRoot.transform == t)
                         break;
 
+                    //继续向上遍历
                     if (!m_SendPointerHoverToParent) t = t.parent;
                 }
             }
