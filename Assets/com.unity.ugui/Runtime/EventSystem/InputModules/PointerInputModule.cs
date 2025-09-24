@@ -34,7 +34,7 @@ namespace UnityEngine.EventSystems
         /// </summary>
         public const int kFakeTouchesId = -4;
 
-        //当前缓存的鼠标事件
+        //当前缓存的鼠标事件，key是对应的鼠标id或者触控手指id
         protected Dictionary<int, PointerEventData> m_PointerData = new Dictionary<int, PointerEventData>();
 
         /// <summary>
@@ -62,6 +62,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Remove the PointerEventData from the cache.
+        /// 移除指针事件
         /// </summary>
         protected void RemovePointerData(PointerEventData data)
         {
@@ -134,6 +135,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Copy one PointerEventData to another.
+        /// 事件复制
         /// </summary>
         protected void CopyFromTo(PointerEventData @from, PointerEventData @to)
         {
@@ -388,6 +390,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Return the last PointerEventData for the given touch / mouse id.
+        /// 获取最新的指针事件
         /// </summary>
         protected PointerEventData GetLastPointerEventData(int id)
         {
@@ -466,6 +469,12 @@ namespace UnityEngine.EventSystems
             }
         }
 
+        /// <summary>
+        /// 指针是否经过某个GO
+        /// 有对应的指针事件、并且指针事件中有指针进入的GO
+        /// </summary>
+        /// <param name="pointerId"></param>
+        /// <returns></returns>
         public override bool IsPointerOverGameObject(int pointerId)
         {
             var lastPointer = GetLastPointerEventData(pointerId);
@@ -476,6 +485,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Clear all pointers and deselect any selected objects in the EventSystem.
+        /// 取消当前选择的所有UI
         /// </summary>
         protected void ClearSelection()
         {

@@ -64,7 +64,7 @@ namespace UnityEngine.EventSystems
         /// <summary>
         /// Should the EventSystem allow navigation events (move / submit / cancel).
         /// 是否允许导航事件
-        /// 也就是说使用键盘(WASD等)、或者控制器的导航操作等触发UI交互
+        /// 也就是说使用键盘(WASD、回车、Esc等)、或者控制器的导航操作等触发UI交互
         /// </summary>
         public bool sendNavigationEvents
         {
@@ -126,7 +126,8 @@ namespace UnityEngine.EventSystems
         private bool m_HasFocus = true;
 
         /// <summary>
-        /// Flag to say whether the EventSystem thinks it should be paused or not based upon focused state.
+        /// Flag to say whether the EventSystem thinks it should be paused or not based upon focused state.、
+        /// 当前是否是获取了焦点
         /// </summary>
         /// <remarks>
         /// Used to determine inside the individual InputModules if the module should be ticked while the application doesnt have focus.

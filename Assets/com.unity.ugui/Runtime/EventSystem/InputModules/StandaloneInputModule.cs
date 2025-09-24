@@ -7,17 +7,24 @@ namespace UnityEngine.EventSystems
     [AddComponentMenu("Event/Standalone Input Module")]
     /// <summary>
     /// A BaseInputModule designed for mouse / keyboard / controller input.
+    /// 标准输入模块
+    /// 鼠标键盘、控制器、触控，现在都走这个类
     /// </summary>
     /// <remarks>
     /// Input module for working with, mouse, keyboard, or controller.
     /// </remarks>
     public class StandaloneInputModule : PointerInputModule
     {
+        //导航事件中，上一次处理导航事件的时间，Time.UnscaledTime
         private float m_PrevActionTime;
+        //导航事件中，上一次处理导航事件的移动方向，4方向
         private Vector2 m_LastMoveVector;
+        //导航事件中，同一个方向的连续移动的处理次数记录，如果某一次不移动了、或者变更了方向，那么就重新从0开始
         private int m_ConsecutiveMoveCount = 0;
 
+        //上一帧鼠标的位置，每个Module无论是否激活，都会每帧记录下（除非失去焦点、并且失去焦点时不处理事件）
         private Vector2 m_LastMousePosition;
+        //当前帧鼠标的位置，每个Module无论是否激活，都会每帧记录下（除非失去焦点、并且失去焦点时不处理事件）
         private Vector2 m_MousePosition;
 
         //当前处理的GO，比如鼠标在它上面，且它是最前面的一个，那么这里就是这个GO
@@ -26,6 +33,7 @@ namespace UnityEngine.EventSystems
         //当前处理的指针事件
         private PointerEventData m_InputPointerEvent;
 
+        //双击事件的间隔，小于此时间段内双击，则被认为是双击
         private const float doubleClickTime = 0.3f;
 
         protected StandaloneInputModule()
@@ -45,38 +53,51 @@ namespace UnityEngine.EventSystems
             get { return InputMode.Mouse; }
         }
 
+        /// <summary>
+        /// 横轴名称
+        /// </summary>
         [SerializeField]
         private string m_HorizontalAxis = "Horizontal";
 
         /// <summary>
         /// Name of the vertical axis for movement (if axis events are used).
+        /// 竖轴名称
         /// </summary>
         [SerializeField]
         private string m_VerticalAxis = "Vertical";
 
         /// <summary>
         /// Name of the submit button.
+        /// 提交按钮名称
+        /// 比如windows中一般是映射回车键
         /// </summary>
         [SerializeField]
         private string m_SubmitButton = "Submit";
 
         /// <summary>
         /// Name of the submit button.
+        /// 取消按钮名称
+        /// 比如windows中一般是映射Esc键
         /// </summary>
         [SerializeField]
         private string m_CancelButton = "Cancel";
 
+        //每秒内输入按键的数量，用于控制按键输入频率
         [SerializeField]
         private float m_InputActionsPerSecond = 10;
 
+        //导航事件中，第二帧重复移动延迟时间
+        //用来处理重复按键，间隔一段时间后才认为是连续；windows中也有类似的设计，比如在记事本里按住方向键，会先移动一下、然后间隔半秒才开始连续移动
         [SerializeField]
         private float m_RepeatDelay = 0.5f;
 
+        //是否强制激活该Module
         [SerializeField]
         [FormerlySerializedAs("m_AllowActivationOnMobileDevice")]
         [HideInInspector]
         private bool m_ForceModuleActive;
 
+        //是否强制激活该Module
         [Obsolete("allowActivationOnMobileDevice has been deprecated. Use forceModuleActive instead (UnityUpgradable) -> forceModuleActive")]
         public bool allowActivationOnMobileDevice
         {
@@ -86,6 +107,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Force this module to be active.
+        /// 是否强制激活该Module
         /// </summary>
         /// <remarks>
         /// If there is no module active with higher priority (ordered in the inspector) this module will be forced active even if valid enabling conditions are not met.
@@ -100,6 +122,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Number of keyboard / controller inputs allowed per second.
+        /// 每秒内输入按键的数量，用于控制按键输入频率
         /// </summary>
         public float inputActionsPerSecond
         {
@@ -109,6 +132,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Delay in seconds before the input actions per second repeat rate takes effect.
+        /// 设置按键连续处理的第一次和后续之间的间隔
         /// </summary>
         /// <remarks>
         /// If the same direction is sustained, the inputActionsPerSecond property can be used to control the rate at which events are fired. However, it can be desirable that the first repetition is delayed, so the user doesn't get repeated actions by accident.
@@ -121,6 +145,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Name of the horizontal axis for movement (if axis events are used).
+        /// 横轴名称
         /// </summary>
         public string horizontalAxis
         {
@@ -130,6 +155,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Name of the vertical axis for movement (if axis events are used).
+        /// 竖轴名称
         /// </summary>
         public string verticalAxis
         {
@@ -139,6 +165,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Maximum number of input events handled per second.
+        /// 提交按钮名称
         /// </summary>
         public string submitButton
         {
@@ -148,6 +175,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Input manager name for the 'cancel' button.
+        /// 取消按钮名称
         /// </summary>
         public string cancelButton
         {
@@ -169,8 +197,16 @@ namespace UnityEngine.EventSystems
 #endif
         }
 
+        /// <summary>
+        /// EventSystem中每帧Update最先调用该接口，每帧一次
+        ///
+        /// 每个Module无论是否激活，都会调用一次该接口
+        /// 而Process()接口则是只有当前激活的Module才会在随后调用
+        /// </summary>
         public override void UpdateModule()
         {
+            //如果当前失去了焦点、并且失去焦点时忽略事件
+            //此时如果正处于拖拽状态，那么取消拖拽，也就是释放鼠标，并清空指针事件
             if (!eventSystem.isFocused && ShouldIgnoreEventsOnNoFocus())
             {
                 if (m_InputPointerEvent != null && m_InputPointerEvent.pointerDrag != null && m_InputPointerEvent.dragging)
@@ -183,6 +219,7 @@ namespace UnityEngine.EventSystems
                 return;
             }
 
+            //否则，每帧记录下当前鼠标的位置、上一帧鼠标的位置
             m_LastMousePosition = m_MousePosition;
             m_MousePosition = input.mousePosition;
         }
@@ -241,11 +278,17 @@ namespace UnityEngine.EventSystems
             m_InputPointerEvent = pointerEvent;
         }
 
+        /// <summary>
+        /// 当前Module是否应该被激活
+        /// </summary>
+        /// <returns></returns>
         public override bool ShouldActivateModule()
         {
+            //GO或者组件本身没有激活时，不应该激活Module
             if (!base.ShouldActivateModule())
                 return false;
 
+            //设置了强制激活，或者有导航按钮按下、或者鼠标有移动、或者鼠标左键按下，都应该激活Module
             var shouldActivate = m_ForceModuleActive;
             shouldActivate |= input.GetButtonDown(m_SubmitButton);
             shouldActivate |= input.GetButtonDown(m_CancelButton);
@@ -254,6 +297,7 @@ namespace UnityEngine.EventSystems
             shouldActivate |= (m_MousePosition - m_LastMousePosition).sqrMagnitude > 0.0f;
             shouldActivate |= input.GetMouseButtonDown(0);
 
+            //有触控输入，那么激活
             if (input.touchCount > 0)
                 shouldActivate = true;
 
@@ -262,16 +306,20 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// See BaseInputModule.
+        /// 激活该Module
         /// </summary>
         public override void ActivateModule()
         {
+            //未获得焦点、并且无焦点时忽略事件，那么就不激活
             if (!eventSystem.isFocused && ShouldIgnoreEventsOnNoFocus())
                 return;
 
             base.ActivateModule();
+            //激活时记录下鼠标位置
             m_MousePosition = input.mousePosition;
             m_LastMousePosition = input.mousePosition;
 
+            //激活时如果没有当前选择的UI，那么就找第一个被选择的UI（这个UI默认也是空的，可以程序自定义）
             var toSelect = eventSystem.currentSelectedGameObject;
             if (toSelect == null)
                 toSelect = eventSystem.firstSelectedGameObject;
@@ -281,6 +329,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// See BaseInputModule.
+        /// 关闭Module
+        /// 此时要将所有已经在选择中的、处理中的UI都取消一下
         /// </summary>
         public override void DeactivateModule()
         {
@@ -308,6 +358,7 @@ namespace UnityEngine.EventSystems
             if (!ProcessTouchEvents() && input.mousePresent)
                 ProcessMouseEvent();
 
+            //如果接受导航事件，比如WASD控制等
             if (eventSystem.sendNavigationEvents)
             {
                 if (!usedEvent)
@@ -479,6 +530,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Calculate and send a submit event to the current selected object.
+        /// 导航处理中，对当前选择的GO，计算并发送Submit事件
         /// </summary>
         /// <returns>If the submit event was used by the selected object.</returns>
         protected bool SendSubmitEventToSelectedObject()
@@ -487,14 +539,22 @@ namespace UnityEngine.EventSystems
                 return false;
 
             var data = GetBaseEventData();
+            //如果按下了提交按钮，那么发送提交事件
             if (input.GetButtonDown(m_SubmitButton))
                 ExecuteEvents.Execute(eventSystem.currentSelectedGameObject, data, ExecuteEvents.submitHandler);
 
+            //如果按下了取消按钮，那么发送取消事件
             if (input.GetButtonDown(m_CancelButton))
                 ExecuteEvents.Execute(eventSystem.currentSelectedGameObject, data, ExecuteEvents.cancelHandler);
             return data.used;
         }
 
+        /// <summary>
+        /// 获取原始移动Vector2
+        ///
+        /// 实际上是从Input里面获取XY轴的移动数据，并且每个轴的移动都是整数，0/-1/1
+        /// </summary>
+        /// <returns></returns>
         private Vector2 GetRawMoveVector()
         {
             Vector2 move = Vector2.zero;
@@ -520,12 +580,17 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Calculate and send a move event to the current selected object.
+        /// 对当前选择的物体发送移动事件
+        ///
+        /// 目前用在导航事件的处理上，假如没有对当前选择的物体发送更新事件、并且开启导航事件处理
+        /// 对于连续按键，第一次处理和后续连续处理之间有延迟m_RepeatDelay，设计理念跟windows中记事本中按住方向键的处理方式一致：先移动一次，然后间隔半秒后如果还是按住同一个键，那么后续再连续处理
         /// </summary>
         /// <returns>If the move event was used by the selected object.</returns>
         protected bool SendMoveEventToSelectedObject()
         {
             float time = Time.unscaledTime;
 
+            //获取轴向移动数据，如果接近于0，那么不处理
             Vector2 movement = GetRawMoveVector();
             if (Mathf.Approximately(movement.x, 0f) && Mathf.Approximately(movement.y, 0f))
             {
@@ -533,8 +598,13 @@ namespace UnityEngine.EventSystems
                 return false;
             }
 
+            
+            //是否跟上一帧的移动方向是相同的
+            //因为movement变量的每个分量都是整数，所以移动方向只有4个方向，那么如果两帧方向的点乘大于0，代表两帧的移动方向是一致的
             bool similarDir = (Vector2.Dot(movement, m_LastMoveVector) > 0);
 
+            //如果两帧移动方向一致、并且这是连续移动的第二帧，那么如果两帧之间的处理时间小于一个delay时间，那么先不处理
+            //用来处理重复按键，间隔一段时间后才认为是连续；windows中也有类似的设计，比如在记事本里按住方向键，会先移动一下、然后间隔半秒才开始连续移动
             // If direction didn't change at least 90 degrees, wait for delay before allowing consequtive event.
             if (similarDir && m_ConsecutiveMoveCount == 1)
             {
@@ -542,23 +612,28 @@ namespace UnityEngine.EventSystems
                     return false;
             }
             // If direction changed at least 90 degree, or we already had the delay, repeat at repeat rate.
+            //如果两帧移动方向不一致，或者已经不是第二帧移动了，那么看接受指令的频率是否满足
             else
             {
                 if (time <= m_PrevActionTime + 1f / m_InputActionsPerSecond)
                     return false;
             }
 
+            //构建或者获取一个轴向移动事件
             var axisEventData = GetAxisEventData(movement.x, movement.y, 0.6f);
 
+            //如果移动方向不是0，那么执行事件
             if (axisEventData.moveDir != MoveDirection.None)
             {
                 ExecuteEvents.Execute(eventSystem.currentSelectedGameObject, axisEventData, ExecuteEvents.moveHandler);
+                //如果两次移动方向不一致，那么连续移动次数归零
                 if (!similarDir)
                     m_ConsecutiveMoveCount = 0;
                 m_ConsecutiveMoveCount++;
                 m_PrevActionTime = time;
                 m_LastMoveVector = movement;
             }
+            //如果移动方向是0，那么重置连续移动次数
             else
             {
                 m_ConsecutiveMoveCount = 0;

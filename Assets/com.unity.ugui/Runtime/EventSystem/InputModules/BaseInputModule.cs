@@ -50,16 +50,24 @@ namespace UnityEngine.EventSystems
         //This is needed for testing
         internal bool sendPointerHoverToParent { get { return m_SendPointerHoverToParent; } set { m_SendPointerHoverToParent = value; } }
 
+        //轴向事件
         private AxisEventData m_AxisEventData;
-
+        //使用的EventSystem
         private EventSystem m_EventSystem;
+        //基础事件
         private BaseEventData m_BaseEventData;
 
+        //覆盖的输入模块
         protected BaseInput m_InputOverride;
+        //默认输入模块
         private BaseInput m_DefaultInput;
 
         /// <summary>
         /// The current BaseInput being used by the input module.
+        /// 获取当前的输入
+        ///
+        /// 如果有m_InputOverride，那么返回m_InputOverride；否则返回m_DefaultInput
+        /// 输入模块与Module在同一个GO上，如果不存在会默认添加一个
         /// </summary>
         public BaseInput input
         {
@@ -91,6 +99,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Used to override the default BaseInput for the input module.
+        /// 覆盖的输入模块
         /// </summary>
         /// <remarks>
         /// With this it is possible to bypass the Input system with your own but still use the same InputModule. For example this can be used to feed fake input into the UI or interface with a different input system.
@@ -359,6 +368,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Given some input data generate an AxisEventData that can be used by the event system.
+        /// 构建一个轴向移动事件，返回4方向移动事件
         /// </summary>
         /// <param name="x">X movement.</param>
         /// <param name="y">Y movement.</param>
@@ -376,6 +386,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Generate a BaseEventData that can be used by the EventSystem.
+        /// 创建或者重置返回 m_BaseEventData
         /// </summary>
         protected virtual BaseEventData GetBaseEventData()
         {
@@ -388,6 +399,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// If the module is pointer based, then override this to return true if the pointer is over an event system object.
+        /// 指针是否经过某个GO
         /// </summary>
         /// <param name="pointerId">Pointer ID</param>
         /// <returns>Is the given pointer over an event system object?</returns>
@@ -398,6 +410,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Should the module be activated.
+        /// 当前Module是否应该被激活
         /// </summary>
         public virtual bool ShouldActivateModule()
         {
@@ -406,24 +419,29 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Called when the module is deactivated. Override this if you want custom code to execute when you deactivate your module.
+        /// 取消激活Module
         /// </summary>
         public virtual void DeactivateModule()
         {}
 
         /// <summary>
         /// Called when the module is activated. Override this if you want custom code to execute when you activate your module.
+        /// 激活Module
         /// </summary>
         public virtual void ActivateModule()
         {}
 
         /// <summary>
         /// Update the internal state of the Module.
+        /// 更新Module
         /// </summary>
         public virtual void UpdateModule()
         {}
 
         /// <summary>
         /// Check to see if the module is supported. Override this if you have a platform specific module (eg. TouchInputModule that you do not want to activate on standalone.)
+        /// Module在当前系统下是否支持
+        /// 默认是支持的，因为现在StandaloneInputModule没有重写，能够支持所有平台了
         /// </summary>
         /// <returns>Is the module supported.</returns>
         public virtual bool IsModuleSupported()

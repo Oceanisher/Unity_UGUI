@@ -126,11 +126,15 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The index of the display that this pointer event comes from.
+        /// 指针所在的显示器序号
         /// </summary>
         public int displayIndex { get; set; }
 
         /// <summary>
         /// Id of the pointer (touch id).
+        /// 指针ID
+        /// 对于鼠标来说，对应的是 kMouseLeftId、kMouseRightId、kMouseMiddleId
+        /// 对于触控来说，对应的是 touchId
         /// </summary>
         public int pointerId { get; set; }
 

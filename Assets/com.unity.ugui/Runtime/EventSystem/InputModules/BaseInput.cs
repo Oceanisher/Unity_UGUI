@@ -4,11 +4,14 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// Interface to the Input system used by the BaseInputModule. With this it is possible to bypass the Input system with your own but still use the same InputModule. For example this can be used to feed fake input into the UI or interface with a different input system.
+    /// 对Input System，也就是输入模块的简单封装
+    /// 没有什么额外的内容，只是简单调用的下Input系统
     /// </summary>
     public class BaseInput : UIBehaviour
     {
         /// <summary>
         /// Interface to Input.compositionString. Can be overridden to provide custom input instead of using the Input class.
+        /// 输入中的组合字符串，输入法使用
         /// </summary>
         public virtual string compositionString
         {
@@ -17,6 +20,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Interface to Input.imeCompositionMode. Can be overridden to provide custom input instead of using the Input class.
+        /// IME输入法组合模式
         /// </summary>
         public virtual IMECompositionMode imeCompositionMode
         {
@@ -26,6 +30,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Interface to Input.compositionCursorPos. Can be overridden to provide custom input instead of using the Input class.
+        /// 组合字符的光标位置
         /// </summary>
         public virtual Vector2 compositionCursorPos
         {
