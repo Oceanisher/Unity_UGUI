@@ -4,6 +4,9 @@ using UnityEngine.Pool;
 
 namespace UnityEngine.EventSystems
 {
+    /// <summary>
+    /// 事件执行静态类
+    /// </summary>
     public static class ExecuteEvents
     {
         public delegate void EventFunction<T1>(T1 handler, BaseEventData eventData);
@@ -231,6 +234,11 @@ namespace UnityEngine.EventSystems
             get { return s_CancelHandler; }
         }
 
+        /// <summary>
+        /// 获取Root节点的所有父节点，包括Root自己
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="eventChain"></param>
         private static void GetEventChain(GameObject root, IList<Transform> eventChain)
         {
             eventChain.Clear();
@@ -295,7 +303,7 @@ namespace UnityEngine.EventSystems
         /// <summary>
         /// Execute the specified event on the first game object underneath the current touch.
         /// 级联执行某个事件
-        /// 把Root物体下的所有子物体都遍历调用（包含Root），只要找到一个能调用的，就直接调用并且返回
+        /// 把Root物体往上的所有父物体都遍历调用（包含Root），只要找到一个能调用的，就直接调用并且返回
         /// </summary>
         private static readonly List<Transform> s_InternalTransformList = new List<Transform>(30);
 
@@ -313,6 +321,12 @@ namespace UnityEngine.EventSystems
             return null;
         }
 
+        /// <summary>
+        /// Component是T类型、并且有效，那么就可以发送给该组件
+        /// </summary>
+        /// <param name="component"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         private static bool ShouldSendToComponent<T>(Component component) where T : IEventSystemHandler
         {
             var valid = component is T;
@@ -357,6 +371,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Whether the specified game object will be able to handle the specified event.
+        /// Go有没有T类型的处理器
+        /// 实际上就是看Go是否active、并且是否有T类型的组件
         /// </summary>
         public static bool CanHandleEvent<T>(GameObject go) where T : IEventSystemHandler
         {
@@ -369,6 +385,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Bubble the specified event on the game object, figuring out which object will actually receive the event.
+        /// 获取Root的GO上能有T处理器的GO
+        /// 往上遍历，找到任意一个有T处理器的GO就返回
         /// </summary>
         public static GameObject GetEventHandler<T>(GameObject root) where T : IEventSystemHandler
         {

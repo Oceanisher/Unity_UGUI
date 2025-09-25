@@ -8,6 +8,7 @@ namespace UnityEngine.EventSystems
     /// 射线基类
     ///
     /// 用于判断光标是否在某个元素上，默认有PhysicsRaycaster, Physics2DRaycaster, GraphicRaycaster(UI专用)
+    /// 这里写的不优雅，因为基类继承UIBehaviour，有很多UI相关的代码；但是2D、3D射线类其实又跟UI没有关系，而且都放在了UGUI包下，这个架构是有些问题的
     /// </summary>
     /// <remarks>
     /// A Raycaster is responsible for raycasting against scene elements to determine if the cursor is over them. Default Raycasters include PhysicsRaycaster, Physics2DRaycaster, GraphicRaycaster.
@@ -15,6 +16,8 @@ namespace UnityEngine.EventSystems
     /// </remarks>
     public abstract class BaseRaycaster : UIBehaviour
     {
+        //最外层的UI元素上的BaseRaycaster，可能是没有
+        //目前只在射线结果排序上使用
         private BaseRaycaster m_RootRaycaster;
 
         /// <summary>
@@ -50,6 +53,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Priority of the raycaster based upon render order.
+        /// 渲染排序优先级
         /// </summary>
         public virtual int renderOrderPriority
         {
@@ -58,6 +62,8 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Raycaster on root canvas
+        /// 最外层的UI元素上的BaseRaycaster，可能是没有
+        /// 目前只在射线结果排序上使用
         /// </summary>
         public BaseRaycaster rootRaycaster
         {

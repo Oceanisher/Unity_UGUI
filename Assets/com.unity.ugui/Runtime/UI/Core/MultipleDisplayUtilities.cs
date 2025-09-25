@@ -78,7 +78,8 @@ namespace UnityEngine.UI
         /// 比如显示器是4K的，但是游戏用2K分辨率运行，此时就是2个分辨率
         /// 还有就是如果游戏和屏幕的宽高比不一致，那么实际游戏运行时会有黑边、相当于有个padding，那么此时也要重新计算鼠标的位置
         ///
-        /// 返回值中的x/y代表canvas空间中的相对坐标，z代表显示器序号displayIndex
+        /// 返回值中的x/y代表屏幕空间中的像素坐标，z代表显示器序号displayIndex
+        /// 由于canvas大小与游戏分辨率一致（Overlay模式下完全匹配，Camera模式下间接匹配、可能会有裁剪或者缩放），所以可以认为xy就是像素位置
         /// </summary>
         /// <returns></returns>
         public static Vector3 RelativeMouseAtScaled(Vector2 position, int displayIndex)

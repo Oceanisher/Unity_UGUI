@@ -2,6 +2,7 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// This is an 4 direction movement enum.
+    /// 4方向移动枚举
     /// </summary>
     /// <remarks>
     /// MoveDirection provides a way of switching between moving states. You must assign these states to actions, such as moving the GameObject by an up vector when in the Up state.

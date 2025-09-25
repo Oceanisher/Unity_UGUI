@@ -11,10 +11,11 @@ namespace UnityEngine.UI
     /// <summary>
     /// A derived BaseRaycaster to raycast against Graphic elements.
     /// 对于UI Graphic使用的射线类
-    /// 与Canvas同在一个GO上，所以是每个GraphicRaycaster类都只检测自己的Canvas
+    /// 与Canvas同在一个GO上，每个Canvas都会默认挂载一个射线类，所以是每个GraphicRaycaster类都只检测自己的Canvas
     /// </summary>
     public class GraphicRaycaster : BaseRaycaster
     {
+        //阻挡射线的Mask的默认层级，默认是不阻挡
         protected const int kNoEventMaskSet = -1;
 
         /// <summary>
@@ -112,6 +113,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The type of objects specified through LayerMask that are checked to determine if they block graphic raycasts.
+        /// 阻挡射线的Mask层级
         /// </summary>
         public LayerMask blockingMask { get { return m_BlockingMask; } set { m_BlockingMask = value; } }
 

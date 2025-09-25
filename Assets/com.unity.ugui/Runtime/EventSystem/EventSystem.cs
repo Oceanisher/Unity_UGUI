@@ -54,10 +54,14 @@ namespace UnityEngine.EventSystems
             }
         }
 
+        //第一个选中的UI，可以程序自定义
+        //当Module激活的时候，如果发现没有当前选中的UI，那么就会取这个UI作为第一个选择的UI
         [SerializeField]
         [FormerlySerializedAs("m_Selected")]
         private GameObject m_FirstSelected;
 
+        //是否允许导航事件
+        //也就是说使用键盘(WASD、回车、Esc等)、或者控制器的导航操作等触发UI交互
         [SerializeField]
         private bool m_sendNavigationEvents = true;
 
@@ -72,12 +76,15 @@ namespace UnityEngine.EventSystems
             set { m_sendNavigationEvents = value; }
         }
 
+        // 拖拽移动的移动距离阈值，像素大小
+        // 实际使用的时候用平方数值
         [SerializeField]
         private int m_DragThreshold = 10;
 
         /// <summary>
         /// The soft area for dragging in pixels.
         /// 拖拽移动的移动距离阈值，像素大小
+        /// 实际使用的时候用平方数值
         /// </summary>
         public int pixelDragThreshold
         {
@@ -90,6 +97,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The currently active EventSystems.BaseInputModule.
+        /// 当前生效的Module
         /// </summary>
         public BaseInputModule currentInputModule
         {
@@ -98,7 +106,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Only one object can be selected at a time. Think: controller-selected button.
-        /// 第一个被选择的物体
+        /// 第一个被选择的UI物体
         /// 没有赋值，默认是空的，应该是可以在业务上自定义
         /// </summary>
         public GameObject firstSelectedGameObject
@@ -109,7 +117,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The GameObject currently considered active by the EventSystem.
-        /// 当前选中的物体
+        /// 当前选中的UI物体
         /// </summary>
         public GameObject currentSelectedGameObject
         {
@@ -174,7 +182,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Set the object as selected. Will send an OnDeselect the the old selected object and OnSelect to the new selected object.
-        /// 设置一个GO为当前选中的对象
+        /// 设置一个UI的GO为当前选中的对象
         /// </summary>
         /// <param name="selected">GameObject to select.</param>
         /// <param name="pointer">Associated EventData.</param>
@@ -237,6 +245,7 @@ namespace UnityEngine.EventSystems
         private static int RaycastComparer(RaycastResult lhs, RaycastResult rhs)
         {
             //如果InputModule不同，那么先进行摄像机属性的排序
+            //先根据Depth深度排序，再根据SortOrder排序，再根据RenderOrder排序
             if (lhs.module != rhs.module)
             {
                 var lhsEventCamera = lhs.module.eventCamera;
@@ -244,6 +253,7 @@ namespace UnityEngine.EventSystems
                 if (lhsEventCamera != null && rhsEventCamera != null && lhsEventCamera.depth != rhsEventCamera.depth)
                 {
                     // need to reverse the standard compareTo
+                    //深度值越小，射线命中的优先级越低
                     if (lhsEventCamera.depth < rhsEventCamera.depth)
                         return 1;
                     if (lhsEventCamera.depth == rhsEventCamera.depth)
@@ -274,7 +284,7 @@ namespace UnityEngine.EventSystems
             if (lhs.sortingOrder != rhs.sortingOrder)
                 return rhs.sortingOrder.CompareTo(lhs.sortingOrder);
 
-            //深度比较仅在两者都归属于同一个Canvas时才有意义
+            //深度比较仅在两者都归属于同一个根Canvas时才有意义
             // comparing depth only makes sense if the two raycast results have the same root canvas (case 912396)
             if (lhs.depth != rhs.depth && lhs.module.rootRaycaster == rhs.module.rootRaycaster)
                 return rhs.depth.CompareTo(lhs.depth);
@@ -304,7 +314,13 @@ namespace UnityEngine.EventSystems
         /// <summary>
         /// Raycast into the scene using all configured BaseRaycasters.
         /// 射线打击，返回射线打击结果
-        /// 被InputModule调用、又反向调用Module中的Raycast方法
+        /// 被InputModule调用，然后调用射线类Raycaster中的Raycast方法
+        /// 可以发现，这里获取的是所有激活中的射线类，包括UI射线类、3D物理射线类、2D物理射线类等，都会被EventSystem统一每帧调用。
+        ///
+        /// 原因：
+        /// 1.提供统一的事件调度逻辑，无论是UI还是普通GO
+        /// 2.在UI与GO混合的场景中，能够统一处理、根据层级深度排序等决定事件的执行方
+        /// 3.3D、2D物体可以通过像UI一样继承UI事件处理的Handler，来像UI一样直接响应事件。（比如 public class My3DObject : MonoBehaviour, IPointerClickHandler {...}）
         /// </summary>
         /// <param name="eventData">Current pointer data.</param>
         /// <param name="raycastResults">List of 'hits' to populate.</param>

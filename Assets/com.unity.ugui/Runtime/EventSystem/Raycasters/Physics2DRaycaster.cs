@@ -11,6 +11,8 @@ namespace UnityEngine.EventSystems
 {
     /// <summary>
     /// Simple event system using physics raycasts.
+    /// 2D物理射线类
+    /// 与3D射线类类似
     /// </summary>
     [AddComponentMenu("Event/Physics 2D Raycaster")]
     [RequireComponent(typeof(Camera))]

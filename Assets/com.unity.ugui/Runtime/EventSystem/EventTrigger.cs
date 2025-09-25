@@ -8,6 +8,10 @@ namespace UnityEngine.EventSystems
     [AddComponentMenu("Event/Event Trigger")]
     /// <summary>
     /// Receives events from the EventSystem and calls registered functions for each event.
+    /// 实际上是实现了所有UI事件处理接口的综合接口
+    ///
+    /// 如果想要某个UI能处理UI的各类事件，但是该UI又不是Selectable下的UI组件，那么就可以挂上该组件，并指定对应事件的处理方法
+    /// 挂载此组件之后，事件将被捕获，不会向上传递了
     /// </summary>
     /// <remarks>
     /// The EventTrigger can be used to specify functions you wish to be called for each EventSystem event.
@@ -175,15 +179,18 @@ namespace UnityEngine.EventSystems
         {
             /// <summary>
             /// What type of event is the associated callback listening for.
+            /// 事件处理类型
             /// </summary>
             public EventTriggerType eventID = EventTriggerType.PointerClick;
 
             /// <summary>
             /// The desired TriggerEvent to be Invoked.
+            /// 事件处理回调
             /// </summary>
             public TriggerEvent callback = new TriggerEvent();
         }
 
+        //各类事件处理的列表
         [FormerlySerializedAs("delegates")]
         [SerializeField]
         private List<Entry> m_Delegates;
@@ -197,6 +204,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// All the functions registered in this EventTrigger
+        /// 各类事件处理的列表
         /// </summary>
         public List<Entry> triggers
         {
@@ -209,6 +217,12 @@ namespace UnityEngine.EventSystems
             set { m_Delegates = value; }
         }
 
+        /// <summary>
+        /// 执行事件处理
+        /// 从 m_Delegates 中获取对应类型的处理回调，并执行
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="eventData"></param>
         private void Execute(EventTriggerType id, BaseEventData eventData)
         {
             for (int i = 0; i < triggers.Count; ++i)
