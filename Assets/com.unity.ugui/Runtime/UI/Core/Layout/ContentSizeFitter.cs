@@ -7,6 +7,8 @@ namespace UnityEngine.UI
     [RequireComponent(typeof(RectTransform))]
     /// <summary>
     /// Resizes a RectTransform to fit the size of its content.
+    /// 内容尺寸适配器
+    /// 使得一个元素的尺寸适配它包含的子元素，所以这是控制父节点自己的组件
     /// </summary>
     /// <remarks>
     /// The ContentSizeFitter can be used on GameObjects that have one or more ILayoutElement components, such as Text, Image, HorizontalLayoutGroup, VerticalLayoutGroup, and GridLayoutGroup.
@@ -36,6 +38,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The fit mode to use to determine the width.
+        /// 水平轴的适配模式
         /// </summary>
         public FitMode horizontalFit { get { return m_HorizontalFit; } set { if (SetPropertyUtility.SetStruct(ref m_HorizontalFit, value)) SetDirty(); } }
 
@@ -43,6 +46,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The fit mode to use to determine the height.
+        /// 垂直轴的适配模式
         /// </summary>
         public FitMode verticalFit { get { return m_VerticalFit; } set { if (SetPropertyUtility.SetStruct(ref m_VerticalFit, value)) SetDirty(); } }
 
@@ -96,8 +100,10 @@ namespace UnityEngine.UI
             m_Tracker.Add(this, rectTransform, (axis == 0 ? DrivenTransformProperties.SizeDeltaX : DrivenTransformProperties.SizeDeltaY));
 
             // Set size to min or preferred size
+            //实际上是获取了Layout布局自己元素的所有子元素的总最小尺寸
             if (fitting == FitMode.MinSize)
                 rectTransform.SetSizeWithCurrentAnchors((RectTransform.Axis)axis, LayoutUtility.GetMinSize(m_Rect, axis));
+            //实际上是获取了Layout布局自己元素的所有子元素的总理想尺寸
             else
                 rectTransform.SetSizeWithCurrentAnchors((RectTransform.Axis)axis, LayoutUtility.GetPreferredSize(m_Rect, axis));
         }

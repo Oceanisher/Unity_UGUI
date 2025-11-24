@@ -12,6 +12,7 @@ namespace UnityEngine.UI
         /// <summary>
         /// Returns the minimum size of the layout element.
         /// 获取元素最小尺寸
+        /// 实际上是获取所有子元素的总最小尺寸
         /// </summary>
         /// <param name="rect">The RectTransform of the layout element to query.</param>
         /// <param name="axis">The axis to query. This can be 0 or 1.</param>
@@ -24,6 +25,7 @@ namespace UnityEngine.UI
         /// <summary>
         /// Returns the preferred size of the layout element.
         /// 获取元素理想尺寸
+        /// 实际上是获取所有子元素的总理想尺寸
         /// </summary>
         /// <param name="rect">The RectTransform of the layout element to query.</param>
         /// <param name="axis">The axis to query. This can be 0 or 1.</param>
@@ -51,7 +53,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns the minimum width of the layout element.
-        /// 获取元素最小宽度
+        /// 获取元素最小宽度，实际上是获取了所有子元素的总最小尺寸
         /// </summary>
         /// <param name="rect">The RectTransform of the layout element to query.</param>
         /// <remarks>
@@ -64,7 +66,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns the preferred width of the layout element.
-        /// 获取元素最佳宽度
+        /// 获取元素最佳宽度，实际上是获取了所有子元素的总最佳尺寸
         /// </summary>
         /// <param name="rect">The RectTransform of the layout element to query.</param>
         /// <returns>
@@ -77,7 +79,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns the flexible width of the layout element.
-        /// 获取元素灵活宽度
+        /// 获取元素灵活宽度，实际上是获取了所有子元素的总灵活尺寸
         /// </summary>
         /// <remarks>
         /// All components on the GameObject that implement the ILayoutElement are queried. The one with the highest priority which has a value for this setting is used. If multiple componets have this setting and have the same priority, the maximum value out of those is used
@@ -90,7 +92,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns the minimum height of the layout element.
-        /// 获取元素最小高度
+        /// 获取元素最小高度，实际上是获取了所有子元素的总最小尺寸
         /// </summary>
         /// <param name="rect">The RectTransform of the layout element to query.</param>
         /// <remarks>
@@ -103,7 +105,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns the preferred height of the layout element.
-        /// 获取元素最佳高度
+        /// 获取元素最佳高度，实际上是获取了所有子元素的总最佳尺寸
         /// </summary>
         /// <param name="rect">The RectTransform of the layout element to query.</param>
         /// <remarks>
@@ -116,7 +118,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns the flexible height of the layout element.
-        /// 获取元素灵活高度
+        /// 获取元素灵活高度，实际上是获取了所有子元素的总灵活尺寸
         /// </summary>
         /// <remarks>
         /// All components on the GameObject that implement the ILayoutElement are queried. The one with the highest priority which has a value for this setting is used. If multiple componets have this setting and have the same priority, the maximum value out of those is used.
@@ -145,8 +147,9 @@ namespace UnityEngine.UI
         /// Gets a calculated layout property for the layout element with the given RectTransform.
         /// 获取元素指定的变量数值
         ///
-        /// 1.从元素上获取所有实现了 ILayoutElement 的组件
+        /// 1.从自己本元素上获取所有实现了 ILayoutElement 的组件
         /// 2.遍历所有的 ILayoutElement，选择优先级更大的 ILayoutElement、或者值更大的
+        /// 3.对于Layout来说，它自己的ILayoutElement组件就是Layout布局组件，而布局组件
         ///
         /// 也就是说，如果组件有多个 ILayoutElement，那么取值最大的那个；
         /// 如果没有 ILayoutElement，那么返回传入的默认值；目前传入的默认值都是0
