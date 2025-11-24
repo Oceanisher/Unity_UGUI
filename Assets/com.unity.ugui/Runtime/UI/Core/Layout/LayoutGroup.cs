@@ -34,6 +34,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The alignment to use for the child layout elements in the layout group.
+        /// 子元素的对齐方式
         /// </summary>
         /// <remarks>
         /// If a layout element does not specify a flexible width or height, its child elements many not use the available space within the layout group. In this case, use the alignment settings to specify how to align child elements within their layout group.
@@ -243,9 +244,9 @@ namespace UnityEngine.UI
         /// <summary>
         /// Returns the alignment on the specified axis as a fraction where 0 is left/top, 0.5 is middle, and 1 is right/bottom.
         /// 对齐方式对应的值，也就是个百分比的值
-        /// 如果对齐方式是左对齐，那么该值为0,
-        /// 如果对齐方式是右对齐，那么该值为1,
-        /// 如果对齐方式是居中，那么该值为0.5,
+        ///
+        /// 枚举根据轴向，按照从左到右、从上到下的顺序；
+        /// 也就是说，如果是X轴向，那么左->中->右的值分别是0、0.5、1；如果是Y轴向，那么上->中->下的值分别是0、0.5、1
         /// </summary>
         /// <param name="axis">The axis to get alignment along. 0 is horizontal and 1 is vertical.</param>
         /// <returns>The alignment as a fraction where 0 is left/top, 0.5 is middle, and 1 is right/bottom.</returns>

@@ -3,6 +3,7 @@ namespace UnityEngine.UI
     [AddComponentMenu("Layout/Horizontal Layout Group", 150)]
     /// <summary>
     /// Layout class for arranging child elements side by side.
+    /// 水平布局组件
     /// </summary>
     public class HorizontalLayoutGroup : HorizontalOrVerticalLayoutGroup
     {

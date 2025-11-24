@@ -3,6 +3,7 @@ namespace UnityEngine.UI
     [AddComponentMenu("Layout/Vertical Layout Group", 151)]
     /// <summary>
     /// Layout child layout elements below each other.
+    /// 垂直布局组件
     /// </summary>
     public class VerticalLayoutGroup : HorizontalOrVerticalLayoutGroup
     {
