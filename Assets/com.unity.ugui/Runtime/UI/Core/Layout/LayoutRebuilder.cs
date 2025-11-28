@@ -6,6 +6,7 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// Wrapper class for managing layout rebuilding of CanvasElement.
+    /// 布局重建器
     /// </summary>
     public class LayoutRebuilder : ICanvasElement
     {
@@ -73,6 +74,14 @@ namespace UnityEngine.UI
             s_Rebuilders.Release(rebuilder);
         }
 
+        /// <summary>
+        /// 布局重建流程
+        /// 1.首先，被处理的m_ToRebuild必须是有ILayoutElement、或者ILayoutGroup组件的
+        /// 2.然后把m_ToRebuild所有ILayoutElement子节点重新计算一下
+        /// 3.然后把m_ToRebuild所有ILayoutGroup组件节点重新计算一下
+        /// 4.这个过程执行2次
+        /// </summary>
+        /// <param name="executing"></param>
         public void Rebuild(CanvasUpdate executing)
         {
             switch (executing)
