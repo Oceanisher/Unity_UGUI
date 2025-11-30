@@ -11,6 +11,9 @@ namespace UnityEngine.UI
     [DisallowMultipleComponent]
     /// <summary>
     /// Simple selectable object - derived from to create a selectable control.
+    /// 可交互的组件基类
+    /// 像Button、InputField这些可交互类的组件的基类
+    /// 实现了鼠标进入、退出、按下、弹起、选中、取消选中接口
     /// </summary>
     public class Selectable
         :
@@ -20,8 +23,11 @@ namespace UnityEngine.UI
         IPointerEnterHandler, IPointerExitHandler,
         ISelectHandler, IDeselectHandler
     {
+        //所有可交互组件的静态数组存储，所有可交互组件都存放在这里
         protected static Selectable[] s_Selectables = new Selectable[10];
+        //所有可交互组件的数量，其实是个指针，标明数组里现在到第几个位置了，每次放入一个元素都+1
         protected static int s_SelectableCount = 0;
+        //是否已经调用过Enable了，防止多次调用Enable
         private bool m_EnableCalled = false;
 
         /// <summary>
@@ -121,6 +127,7 @@ namespace UnityEngine.UI
             return copyCount;
         }
 
+        //导航信息
         // Navigation information.
         [FormerlySerializedAs("navigation")]
         [SerializeField]
@@ -128,6 +135,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         ///Transition mode for a Selectable.
+        /// 可交互组件发生状态变更时所用的视觉效果转换方法
         /// </summary>
         public enum Transition
         {
@@ -138,51 +146,66 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// Use an color tint transition.
+            /// 使用颜色
             /// </summary>
             ColorTint,
 
             /// <summary>
             /// Use a sprite swap transition.
+            /// 使用精灵
             /// </summary>
             SpriteSwap,
 
             /// <summary>
             /// Use an animation transition.
+            /// 使用动画
             /// </summary>
             Animation
         }
 
         // Type of the transition that occurs when the button state changes.
+        // 可交互组件发生状态变更时所用的视觉效果转换方法
         [FormerlySerializedAs("transition")]
         [SerializeField]
         private Transition m_Transition = Transition.ColorTint;
 
         // Colors used for a color tint-based transition.
+        //不同状态下使用的颜色
         [FormerlySerializedAs("colors")]
         [SerializeField]
         private ColorBlock m_Colors = ColorBlock.defaultColorBlock;
 
         // Sprites used for a Image swap-based transition.
+        //不同状态下使用的精灵图片
         [FormerlySerializedAs("spriteState")]
         [SerializeField]
         private SpriteState m_SpriteState;
 
+        //不同状态下使用的动画触发器
         [FormerlySerializedAs("animationTriggers")]
         [SerializeField]
         private AnimationTriggers m_AnimationTriggers = new AnimationTriggers();
 
+        //是否可交互
         [Tooltip("Can the Selectable be interacted with?")]
         [SerializeField]
         private bool m_Interactable = true;
 
+        //自身的Graphic组件，Awake时会赋值
+        //如果自身使用Sprite做状态切换，那么Graphic组件必须是Image才能生效
+        //
+        //Graphic有2个作用：
+        //一个是接收射线检测、从而能够产生UI事件，没有Graphic的话无法被射线检测到；
+        //第二个是提供事件的视觉效果，比如颜色变更、动画缩放等，没有Graphic也就没有这些视觉效果
         // Graphic that will be colored.
         [FormerlySerializedAs("highlightGraphic")]
         [FormerlySerializedAs("m_HighlightGraphic")]
         [SerializeField]
         private Graphic m_TargetGraphic;
 
-
+        //逐级向上找CanvasGroup，是否允许交互
         private bool m_GroupsAllowInteraction = true;
+        //当前组件在可交互组件列表中的位置
         protected int m_CurrentIndex = -1;
 
         /// <summary>
@@ -304,6 +327,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Graphic that will be transitioned upon.
+        /// 自身的Graphic元素
         /// </summary>
         /// <example>
         /// <code>
@@ -330,6 +354,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Is this object interactable.
+        /// 是否可交互
         /// </summary>
         /// <example>
         /// <code>
@@ -362,6 +387,7 @@ namespace UnityEngine.UI
             get { return m_Interactable; }
             set
             {
+                //当状态发生变更，并且当前选中的元素是自己，那么取消当前选中的元素
                 if (SetPropertyUtility.SetStruct(ref m_Interactable, value))
                 {
                     if (!m_Interactable && EventSystem.current != null && EventSystem.current.currentSelectedGameObject == gameObject)
@@ -371,8 +397,11 @@ namespace UnityEngine.UI
             }
         }
 
+        //鼠标是否进入了
         private bool             isPointerInside   { get; set; }
+        //是否按下了
         private bool             isPointerDown     { get; set; }
+        //是否已经选中了
         private bool             hasSelection      { get; set; }
 
         protected Selectable()
@@ -380,6 +409,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Convenience function that converts the referenced Graphic to a Image, if possible.
+        /// 从 m_TargetGraphic 转换为Image组件，在设置为图片切换状态时使用
+        /// 所以如果不同状态下使用不同的Sprite，自身必须挂载Image组件
         /// </summary>
         public Image image
         {
@@ -420,11 +451,15 @@ namespace UnityEngine.UI
 
         protected override void Awake()
         {
+            //Awake时，从自身找Grahpic对象
             if (m_TargetGraphic == null)
                 m_TargetGraphic = GetComponent<Graphic>();
         }
 
+        //CanvasGroup缓存数据，用于逐级查询CanvasGroup的时候减少开销
         private readonly List<CanvasGroup> m_CanvasGroupCache = new List<CanvasGroup>();
+        
+        //CanvasGroup变更时调用，重新检测下是否可以交互
         protected override void OnCanvasGroupChanged()
         {
             var parentGroupAllowsInteraction = ParentGroupAllowsInteraction();
@@ -435,7 +470,12 @@ namespace UnityEngine.UI
                 OnSetProperty();
             }
         }
-
+        
+        /// <summary>
+        /// 逐级向上查找CanvasGroup，看CanvasGroup是否允许交互
+        /// 过程中，如果CanvasGroup不能交互、或者CanvasGroup忽略父CanvasGroup的交互设置，那么返回
+        /// </summary>
+        /// <returns></returns>
         bool ParentGroupAllowsInteraction()
         {
             Transform t = transform;
@@ -459,6 +499,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Is the object interactable.
+        /// 按钮是否可交互
+        /// 是上层的CanvasGroup可交互、并且自身可交互
         /// </summary>
         /// <example>
         /// <code>
@@ -496,12 +538,14 @@ namespace UnityEngine.UI
         // Select on enable and add to the list.
         protected override void OnEnable()
         {
+            //如果已经Enable过了，不再多次调用
             //Check to avoid multiple OnEnable() calls for each selectable
             if (m_EnableCalled)
                 return;
 
             base.OnEnable();
 
+            //静态可交互组件列表的扩容
             if (s_SelectableCount == s_Selectables.Length)
             {
                 Selectable[] temp = new Selectable[s_Selectables.Length * 2];
@@ -509,16 +553,19 @@ namespace UnityEngine.UI
                 s_Selectables = temp;
             }
 
+            //如果当前选中了这个GO，那么标识为选中态
             if (EventSystem.current && EventSystem.current.currentSelectedGameObject == gameObject)
             {
                 hasSelection = true;
             }
 
+            //把当前组件放入到静态可交互组件列表的最后一个，并做一些数据的初始化
             m_CurrentIndex = s_SelectableCount;
             s_Selectables[m_CurrentIndex] = this;
             s_SelectableCount++;
             isPointerDown = false;
             m_GroupsAllowInteraction = ParentGroupAllowsInteraction();
+            //状态流转
             DoStateTransition(currentSelectionState, true);
 
             m_EnableCalled = true;
@@ -528,10 +575,14 @@ namespace UnityEngine.UI
         {
             base.OnTransformParentChanged();
 
+            //父节点Transform变更的时候，重新检测下CanvasGroup
             // If our parenting changes figure out if we are under a new CanvasGroup.
             OnCanvasGroupChanged();
         }
 
+        /// <summary>
+        /// 每当数据变更、交互变更时，都开始进行状态流转
+        /// </summary>
         private void OnSetProperty()
         {
 #if UNITY_EDITOR
@@ -542,6 +593,7 @@ namespace UnityEngine.UI
             DoStateTransition(currentSelectionState, false);
         }
 
+        //失效的时候把自己从可交互组件列表中剔除
         // Remove from the list.
         protected override void OnDisable()
         {
@@ -549,8 +601,10 @@ namespace UnityEngine.UI
             if (!m_EnableCalled)
                 return;
 
+            //计数-1
             s_SelectableCount--;
 
+            //把列表中的最后一个挪到自己的这个位置上
             // Update the last elements index to be this index
             s_Selectables[s_SelectableCount].m_CurrentIndex = m_CurrentIndex;
 
@@ -560,6 +614,7 @@ namespace UnityEngine.UI
             // null out last element.
             s_Selectables[s_SelectableCount] = null;
 
+            //清理一下各类状态
             InstantClearState();
             base.OnDisable();
 
@@ -568,6 +623,7 @@ namespace UnityEngine.UI
 
         void OnApplicationFocus(bool hasFocus)
         {
+            //当用户切到其他应用时清除所有状态
             if (!hasFocus && IsPressed())
             {
                 InstantClearState();
@@ -605,7 +661,8 @@ namespace UnityEngine.UI
         }
 
 #endif // if UNITY_EDITOR
-
+        
+        //当前的选中状态
         protected SelectionState currentSelectionState
         {
             get
@@ -624,6 +681,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Clear any internal state from the Selectable (used when disabling).
+        /// Disable的时候，或者App重新获取焦点并且自己不是被选中的时候，清理一下各类状态
+        /// 清理颜色、动画、精灵状态
         /// </summary>
         protected virtual void InstantClearState()
         {
@@ -649,9 +708,11 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Transition the Selectable to the entered state.
+        /// 可交互组件的状态流转
+        /// 切换到不同的状态，颜色、精灵、动画触发器设置
         /// </summary>
         /// <param name="state">State to transition to</param>
-        /// <param name="instant">Should the transition occur instantly.</param>
+        /// <param name="instant">Should the transition occur instantly.是否立即完成</param>
         protected virtual void DoStateTransition(SelectionState state, bool instant)
         {
             if (!gameObject.activeInHierarchy)
@@ -695,6 +756,7 @@ namespace UnityEngine.UI
                     break;
             }
 
+            //根据不同的转换类型，来确认使用的是颜色、还是精灵、还是动画状态
             switch (m_Transition)
             {
                 case Transition.ColorTint:
@@ -711,31 +773,37 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// An enumeration of selected states of objects
+        /// 可交互组件的当前选中状态
         /// </summary>
         protected enum SelectionState
         {
             /// <summary>
             /// The UI object can be selected.
+            /// 准备，可被交互
             /// </summary>
             Normal,
 
             /// <summary>
             /// The UI object is highlighted.
+            /// 高亮，鼠标进入时
             /// </summary>
             Highlighted,
 
             /// <summary>
             /// The UI object is pressed.
+            /// 按下
             /// </summary>
             Pressed,
 
             /// <summary>
             /// The UI object is selected
+            /// 选择
             /// </summary>
             Selected,
 
             /// <summary>
             /// The UI object cannot be selected.
+            /// 不可选中
             /// </summary>
             Disabled,
         }
@@ -744,6 +812,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Finds the selectable object next to this one.
+        /// 找到下一个可选择的对象
         /// </summary>
         /// <remarks>
         /// The direction is determined by a Vector3 variable.
@@ -776,25 +845,38 @@ namespace UnityEngine.UI
         /// </example>
         public Selectable FindSelectable(Vector3 dir)
         {
+            //dir是世界坐标的方向
+            //注意，由于导航是按照UI的旋转进行计算的，而不是固定屏幕方向，所以如果UI有旋转，那么原有的dir就会先被转换一下
+            //比如用户输入了↑键，但是当前的UI元素右转了90°，那么会把这个用户输入转换一下，变成世界坐标的→方向
+            //但是转换后还是世界方向
             dir = dir.normalized;
+            //这里是把dir先转换到本地方向，因为传进来的是世界方向
             Vector3 localDir = Quaternion.Inverse(transform.rotation) * dir;
+            //计算出在这个方向下，该RectTransform边缘上的点，并转换为世界坐标点
             Vector3 pos = transform.TransformPoint(GetPointOnRectEdge(transform as RectTransform, localDir));
+            //遍历元素时，最佳元素的分数，用来寻找到最佳元素
             float maxScore = Mathf.NegativeInfinity;
+            //遍历元素时，反方向最远元素的分数，用来寻找到反方向最远的元素，环绕式导航需要
             float maxFurthestScore = Mathf.NegativeInfinity;
+            //当前分数
             float score = 0;
 
+            //是否使用环绕式导航
             bool wantsWrapAround = navigation.wrapAround && (m_Navigation.mode == Navigation.Mode.Vertical || m_Navigation.mode == Navigation.Mode.Horizontal);
 
+            //最佳选择
             Selectable bestPick = null;
+            //反方向最远选择
             Selectable bestFurthestPick = null;
 
+            //遍历所有的可交互组件，寻找下一个
             for (int i = 0; i < s_SelectableCount; ++i)
             {
                 Selectable sel = s_Selectables[i];
-
+                //跳过自己
                 if (sel == this)
                     continue;
-
+                //跳过不可交互、不可导航的
                 if (!sel.IsInteractable() || sel.navigation.mode == Navigation.Mode.None)
                     continue;
 
@@ -806,16 +888,23 @@ namespace UnityEngine.UI
                     continue;
 #endif
 
+                //找到sel元素的中心店，并转换为世界坐标
                 var selRect = sel.transform as RectTransform;
                 Vector3 selCenter = selRect != null ? (Vector3)selRect.rect.center : Vector3.zero;
+                //计算出sel元素与当前元素边缘点的相对位置向量
                 Vector3 myVector = sel.transform.TransformPoint(selCenter) - pos;
-
+                
+                //方向与sel世界坐标中心点点乘，计算出方向在sel中心方向的投影长度
                 // Value that is the distance out along the direction.
                 float dot = Vector3.Dot(dir, myVector);
 
+                //如果投影长度是负值，说明这个sel元素是反方向的元素，如果此时开启了环绕式、那么把它记录到最远元素中
                 // If element is in wrong direction and we have wrapAround enabled check and cache it if furthest away.
                 if (wantsWrapAround && dot < 0)
                 {
+                    //-dot越大，代表投影越大，那么就是反方向的元素越接近要选中的反方向
+                    //myVector.sqrMagnitude越大，代表元素本身越远
+                    //所以用这2个的乘积作为一个分数，分数越大，代表越应该选择这个元素
                     score = -dot * myVector.sqrMagnitude;
 
                     if (score > maxFurthestScore)
@@ -827,6 +916,7 @@ namespace UnityEngine.UI
                     continue;
                 }
 
+                //如果dot小于0，那么代表sel元素不在要选择的方向上，所以就不做考虑了
                 // Skip elements that are in the wrong direction or which have zero distance.
                 // This also ensures that the scoring formula below will not have a division by zero error.
                 if (dot <= 0)
@@ -846,6 +936,10 @@ namespace UnityEngine.UI
                 // that touches pos and whose center is located along dir. A way to visualize the resulting functionality is this:
                 // From the position pos, blow up a circular balloon so it grows in the direction of dir.
                 // The first Selectable whose center the circular balloon touches is the one that's chosen.
+                //距离越近、方向越接近，那么就越应该选择这个元素
+                //所以这个计算分数的方法综合了这2个因素，来计算得分
+                //方向越偏离，那么dot投影值越小，得分越小
+                //距离越远，myVector.sqrMagnitude值越大，得分越小
                 score = dot / myVector.sqrMagnitude;
 
                 if (score > maxScore)
@@ -855,22 +949,36 @@ namespace UnityEngine.UI
                 }
             }
 
+            //如果开启了环绕式，并且目标方向上没有要选择的元素，那么就返回最远的元素
             if (wantsWrapAround && null == bestPick) return bestFurthestPick;
-
+            //否则，返回目标方向最近的元素
             return bestPick;
         }
 
+        /// <summary>
+        /// 计算在某个方向下，RectTransform边缘上的点的位置
+        ///
+        /// 使用无穷范数归一化|8方向归一化算法进行计算
+        /// </summary>
+        /// <param name="rect"></param>
+        /// <param name="dir">世界坐标的方向</param>
+        /// <returns>返回值是本地坐标的位置点</returns>
         private static Vector3 GetPointOnRectEdge(RectTransform rect, Vector2 dir)
         {
             if (rect == null)
                 return Vector3.zero;
+            //使用无穷范数归一化|8方向归一化算法进行方向归一化，使得dir在一个正方形范围内
+            //这样可以利用这个方向计算边缘点位置
             if (dir != Vector2.zero)
                 dir /= Mathf.Max(Mathf.Abs(dir.x), Mathf.Abs(dir.y));
+            //Rect的中心点+ rect的尺寸按照dir进行缩放即可
+            //Vector.Scale是逐分量相乘，相当于X/Y分别缩放
             dir = rect.rect.center + Vector2.Scale(rect.rect.size, dir * 0.5f);
             return dir;
         }
 
         // Convenience function -- change the selection to the specified object if it's not null and happens to be active.
+        //设置导航UI
         void Navigate(AxisEventData eventData, Selectable sel)
         {
             if (sel != null && sel.IsActive())
@@ -879,6 +987,11 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Find the selectable object to the left of this one.
+        /// 找到左方向的元素
+        /// 注意自动导航是相对于UI元素本身的方向，而不是固定屏幕方向，所以虽然是用户按了↑键，但是如果UI本身有旋转，还是会把用户输入转换一下
+        /// 比如用户输入了↑键，但是当前的UI元素右转了90°，那么会把这个用户输入转换一下，变成世界坐标的→方向
+        /// 所以原本用户想选择↑，还是会变成→，这是UGUI的设计
+        /// 注意转换后的方向，仍旧是世界坐标的方向
         /// </summary>
         /// <example>
         /// <code>
@@ -918,6 +1031,11 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Find the selectable object to the right of this one.
+        /// 找到右方向的元素
+        /// 注意自动导航是相对于UI元素本身的方向，而不是固定屏幕方向，所以虽然是用户按了↑键，但是如果UI本身有旋转，还是会把用户输入转换一下
+        /// 比如用户输入了↑键，但是当前的UI元素右转了90°，那么会把这个用户输入转换一下，变成世界坐标的→方向
+        /// 所以原本用户想选择↑，还是会变成→，这是UGUI的设计
+        /// 注意转换后的方向，仍旧是世界坐标的方向
         /// </summary>
         /// <example>
         /// <code>
@@ -957,6 +1075,11 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The Selectable object above current
+        /// 找到上方向的元素
+        /// 注意自动导航是相对于UI元素本身的方向，而不是固定屏幕方向，所以虽然是用户按了↑键，但是如果UI本身有旋转，还是会把用户输入转换一下
+        /// 比如用户输入了↑键，但是当前的UI元素右转了90°，那么会把这个用户输入转换一下，变成世界坐标的→方向
+        /// 所以原本用户想选择↑，还是会变成→，这是UGUI的设计
+        /// 注意转换后的方向，仍旧是世界坐标的方向
         /// </summary>
         /// <example>
         /// <code>
@@ -996,6 +1119,11 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Find the selectable object below this one.
+        /// 找到下方向的元素
+        /// 注意自动导航是相对于UI元素本身的方向，而不是固定屏幕方向，所以虽然是用户按了↑键，但是如果UI本身有旋转，还是会把用户输入转换一下
+        /// 比如用户输入了↑键，但是当前的UI元素右转了90°，那么会把这个用户输入转换一下，变成世界坐标的→方向
+        /// 所以原本用户想选择↑，还是会变成→，这是UGUI的设计
+        /// 注意转换后的方向，仍旧是世界坐标的方向
         /// </summary>
         /// <example>
         /// <code>
@@ -1035,6 +1163,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Determine in which of the 4 move directions the next selectable object should be found.
+        /// 监听导航事件，决定下一个被选择的元素
         /// </summary>
         /// <example>
         /// <code>
@@ -1082,6 +1211,12 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 开始颜色转换动画
+        /// 必须有Graphic组件在身上
+        /// </summary>
+        /// <param name="targetColor"></param>
+        /// <param name="instant"></param>
         void StartColorTween(Color targetColor, bool instant)
         {
             if (m_TargetGraphic == null)
@@ -1090,6 +1225,11 @@ namespace UnityEngine.UI
             m_TargetGraphic.CrossFadeColor(targetColor, instant ? 0f : m_Colors.fadeDuration, true, true);
         }
 
+        /// <summary>
+        /// 切换精灵，自身必须有Image组件
+        /// 注意这里是切换了Image组件的overrideSprite，而不是直接切换Sprite，好处是可以随时回复原有图片
+        /// </summary>
+        /// <param name="newSprite"></param>
         void DoSpriteSwap(Sprite newSprite)
         {
             if (image == null)
@@ -1098,6 +1238,11 @@ namespace UnityEngine.UI
             image.overrideSprite = newSprite;
         }
 
+        /// <summary>
+        /// 触发Animator中的动画变量
+        /// 不一定生效，得有动画组件才行
+        /// </summary>
+        /// <param name="triggername"></param>
         void TriggerAnimation(string triggername)
         {
 #if PACKAGE_ANIMATION
@@ -1116,6 +1261,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Returns whether the selectable is currently 'highlighted' or not.
+        /// 是否是被选择的元素
         /// </summary>
         /// <remarks>
         /// Use this to check if the selectable UI element is currently highlighted.
@@ -1158,6 +1304,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Whether the current selectable is being pressed.
+        /// 是否被按下了
         /// </summary>
         protected bool IsPressed()
         {
@@ -1167,6 +1314,7 @@ namespace UnityEngine.UI
         }
 
         // Change the button to the correct state
+        //转换到指定的状态，必须可交互、并且有效
         private void EvaluateAndTransitionToSelectionState()
         {
             if (!IsActive() || !IsInteractable())
@@ -1177,6 +1325,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Evaluate current state and transition to pressed state.
+        /// 监听按下事件，只关注左键按下
         /// </summary>
         /// <example>
         /// <code>
@@ -1199,9 +1348,11 @@ namespace UnityEngine.UI
         /// </example>
         public virtual void OnPointerDown(PointerEventData eventData)
         {
+            //只关注鼠标左键按下
             if (eventData.button != PointerEventData.InputButton.Left)
                 return;
 
+            //如果开启了导航，那么会设置当前选中的元素
             // Selection tracking
             if (IsInteractable() && navigation.mode != Navigation.Mode.None && EventSystem.current != null)
                 EventSystem.current.SetSelectedGameObject(gameObject, eventData);
@@ -1212,6 +1363,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Evaluate eventData and transition to appropriate state.
+        /// 监听弹起事件
+        /// 只关注鼠标左键
         /// </summary>
         /// <example>
         /// <code>
@@ -1239,6 +1392,7 @@ namespace UnityEngine.UI
         /// </example>
         public virtual void OnPointerUp(PointerEventData eventData)
         {
+            //只关注鼠标左键
             if (eventData.button != PointerEventData.InputButton.Left)
                 return;
 
@@ -1249,6 +1403,7 @@ namespace UnityEngine.UI
         /// <summary>
         /// Evaluate current state and transition to appropriate state.
         /// New state could be pressed or hover depending on pressed state.
+        /// 监听鼠标进入事件
         /// </summary>
         /// <example>
         /// <code>
@@ -1277,6 +1432,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Evaluate current state and transition to normal state.
+        /// 监听鼠标离开事件
         /// </summary>
         /// <example>
         /// <code>
@@ -1305,6 +1461,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Set selection and transition to appropriate state.
+        /// 监听选中事件
         /// </summary>
         /// <example>
         /// <code>
@@ -1333,6 +1490,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Unset selection and transition to appropriate state.
+        /// 监听取消选择事件
         /// </summary>
         /// <example>
         /// <code>
@@ -1360,6 +1518,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Selects this Selectable.
+        /// 选中当前元素，下拉菜单中使用
         /// </summary>
         /// <example>
         /// <code>

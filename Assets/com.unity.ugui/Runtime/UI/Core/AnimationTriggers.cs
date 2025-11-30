@@ -5,6 +5,7 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// Structure that stores the state of an animation transition on a Selectable.
+    /// 可交互组件不同状态下使用的动画触发器
     /// </summary>
     [Serializable]
     public class AnimationTriggers
@@ -15,22 +16,27 @@ namespace UnityEngine.UI
         private const string kDefaultSelectedAnimName    = "Selected";
         private const string kDefaultDisabledAnimName    = "Disabled";
 
+        //准备态使用的动画触发器
         [FormerlySerializedAs("normalTrigger")]
         [SerializeField]
         private string m_NormalTrigger    = kDefaultNormalAnimName;
 
+        //鼠标进入态使用的动画触发器
         [FormerlySerializedAs("highlightedTrigger")]
         [SerializeField]
         private string m_HighlightedTrigger = kDefaultHighlightedAnimName;
 
+        //按下态使用的动画触发器
         [FormerlySerializedAs("pressedTrigger")]
         [SerializeField]
         private string m_PressedTrigger = kDefaultPressedAnimName;
 
+        //选中态使用的动画触发器
         [FormerlySerializedAs("m_HighlightedTrigger")]
         [SerializeField]
         private string m_SelectedTrigger = kDefaultSelectedAnimName;
 
+        //禁用态使用的动画触发器
         [FormerlySerializedAs("disabledTrigger")]
         [SerializeField]
         private string m_DisabledTrigger = kDefaultDisabledAnimName;

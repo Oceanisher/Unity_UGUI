@@ -6,33 +6,41 @@ namespace UnityEngine.UI
     [Serializable]
     /// <summary>
     /// Structure that stores the state of a color transition on a Selectable.
+    /// 可交互组件不同状态下使用的颜色叠加
     /// </summary>
     public struct ColorBlock : IEquatable<ColorBlock>
     {
+        //准备态颜色
         [FormerlySerializedAs("normalColor")]
         [SerializeField]
         private Color m_NormalColor;
 
+        //鼠标进入时的颜色
         [FormerlySerializedAs("highlightedColor")]
         [SerializeField]
         private Color m_HighlightedColor;
 
+        //按下时的颜色
         [FormerlySerializedAs("pressedColor")]
         [SerializeField]
         private Color m_PressedColor;
 
+        //选中时的颜色
         [FormerlySerializedAs("m_HighlightedColor")]
         [SerializeField]
         private Color m_SelectedColor;
 
+        //禁用时的颜色
         [FormerlySerializedAs("disabledColor")]
         [SerializeField]
         private Color m_DisabledColor;
 
+        //颜色系数，可以让颜色更亮一些
         [Range(1, 5)]
         [SerializeField]
         private float m_ColorMultiplier;
 
+        //颜色状态切换需要的时间
         [FormerlySerializedAs("fadeDuration")]
         [SerializeField]
         private float m_FadeDuration;

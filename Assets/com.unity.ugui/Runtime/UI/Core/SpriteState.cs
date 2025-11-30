@@ -6,19 +6,24 @@ namespace UnityEngine.UI
     [Serializable]
     /// <summary>
     /// Structure that stores the state of a sprite transition on a Selectable.
+    /// 可交互组件不同状态下使用的精灵图片
     /// </summary>
     public struct SpriteState : IEquatable<SpriteState>
     {
+        //鼠标进入时使用的精灵
         [SerializeField]
         private Sprite m_HighlightedSprite;
 
+        //按下时使用的精灵
         [SerializeField]
         private Sprite m_PressedSprite;
 
+        //选中时使用的精灵
         [FormerlySerializedAs("m_HighlightedSprite")]
         [SerializeField]
         private Sprite m_SelectedSprite;
 
+        //禁用时使用的精灵
         [SerializeField]
         private Sprite m_DisabledSprite;
 

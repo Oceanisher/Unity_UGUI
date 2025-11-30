@@ -6,6 +6,8 @@ namespace UnityEngine.UI
     [Serializable]
     /// <summary>
     /// Structure storing details related to navigation.
+    /// UI元素导航信息结构体
+    /// 它控制当用户使用键盘方向键或游戏手柄摇杆时，UI 焦点如何在不同的 Selectable 元素（如 Button、Toggle、Slider 等）之间切换。
     /// </summary>
     public struct Navigation : IEquatable<Navigation>
     {
@@ -17,6 +19,7 @@ namespace UnityEngine.UI
         [Flags]
         /// <summary>
         /// Navigation mode enumeration.
+        /// 导航模式
         /// </summary>
         /// <remarks>
         /// This looks like it's not flags, but it is flags, the reason is that Automatic is considered horizontal and vertical mode combined
@@ -48,11 +51,13 @@ namespace UnityEngine.UI
         {
             /// <summary>
             /// No navigation is allowed from this object.
+            /// 此Go禁用导航
             /// </summary>
             None        = 0,
 
             /// <summary>
             /// Horizontal Navigation.
+            /// 仅开启水平导航
             /// </summary>
             /// <remarks>
             /// Navigation should only be allowed when left / right move events happen.
@@ -61,6 +66,7 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// Vertical navigation.
+            /// 仅开启垂直导航
             /// </summary>
             /// <remarks>
             /// Navigation should only be allowed when up / down move events happen.
@@ -69,6 +75,7 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// Automatic navigation.
+            /// 自动导航，会使用启发式算法寻找到最佳的下一个
             /// </summary>
             /// <remarks>
             /// Attempt to find the 'best' next object to select. This should be based on a sensible heuristic.
@@ -77,6 +84,7 @@ namespace UnityEngine.UI
 
             /// <summary>
             /// Explicit navigation.
+            /// 需要用户指定下一个
             /// </summary>
             /// <remarks>
             /// User should explicitly specify what is selected by each move event.
@@ -84,38 +92,46 @@ namespace UnityEngine.UI
             Explicit    = 4,
         }
 
+        //使用的导航算法
         // Which method of navigation will be used.
         [SerializeField]
         private Mode m_Mode;
 
+        //启用环绕式导航，也就是说可以当到最后一个时，可以跳到第一个，反之亦然；对于Automatic模式不生效
         [Tooltip("Enables navigation to wrap around from last to first or first to last element. Does not work for automatic grid navigation")]
         [SerializeField]
         private bool m_WrapAround;
 
+        //用于Explicit模式下，摇杆向上时的选择对象
         // Game object selected when the joystick moves up. Used when navigation is set to "Explicit".
         [SerializeField]
         private Selectable m_SelectOnUp;
 
+        //用于Explicit模式下，摇杆向下时的选择对象
         // Game object selected when the joystick moves down. Used when navigation is set to "Explicit".
         [SerializeField]
         private Selectable m_SelectOnDown;
 
+        //用于Explicit模式下，摇杆向左时的选择对象
         // Game object selected when the joystick moves left. Used when navigation is set to "Explicit".
         [SerializeField]
         private Selectable m_SelectOnLeft;
 
+        //用于Explicit模式下，摇杆向右时的选择对象
         // Game object selected when the joystick moves right. Used when navigation is set to "Explicit".
         [SerializeField]
         private Selectable m_SelectOnRight;
 
         /// <summary>
         /// Navigation mode.
+        /// 导航模式
         /// </summary>
         public Mode       mode           { get { return m_Mode; } set { m_Mode = value; } }
 
         /// <summary>
         /// Enables navigation to wrap around from last to first or first to last element.
         /// Will find the furthest element from the current element in the opposite direction of movement.
+        //  启用环绕式导航，也就是说可以当到最后一个时，可以跳到第一个，反之亦然；对于Automatic模式不生效
         /// </summary>
         /// <example>
         /// Note: If you have a grid of elements and you are on the last element in a row it will not wrap over to the next row it will pick the furthest element in the opposite direction.
@@ -264,6 +280,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Return a Navigation with sensible default values.
+        /// 默认导航模式是自动、且关闭环绕模式
         /// </summary>
         /// <example>
         /// <code>

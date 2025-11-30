@@ -92,7 +92,7 @@ namespace UnityEngine.EventSystems
             set { m_DragThreshold = value; }
         }
 
-        //当前选中的GO
+        //当前选中的GO，开启导航才有被选中的
         private GameObject m_CurrentSelected;
 
         /// <summary>
