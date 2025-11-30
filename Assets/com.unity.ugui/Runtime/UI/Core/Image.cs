@@ -2237,7 +2237,7 @@ namespace UnityEngine.UI
                     continue;
 
                 //如果射线位置在中心区域的上边界、右边界之外，也就是落在Border中、或者Border外
-                //这里的计算是错误的，因为rect是世界单位，spriteRect是像素单位
+                //TODO 这里的计算是错误的，因为rect是世界单位，spriteRect是像素单位
                 //正确的计算应该是 percent = (rect.size[i] - local[i]) / adjustedBorder[i + 2]，先计算射线点在在边界内的比例
                 //然后使用像素的Border计算射线点距离边界的像素距离 percent * border[i + 2]
                 if (rect.size[i] - local[i] <= adjustedBorder[i + 2])
@@ -2260,7 +2260,7 @@ namespace UnityEngine.UI
                     //先把命中位置减去边界
                     local[i] -= adjustedBorder[i];
                     //然后把 local[i] 不断的对中心区域平铺求余，从而得到平铺后的相对位置
-                    //这里感觉有BUG，local是世界单位、spriteRect是像素单位，有问题
+                    //TODO 这里感觉有BUG，local是世界单位、spriteRect是像素单位，有问题
                     local[i] = Mathf.Repeat(local[i], spriteRect.size[i] - border[i] - border[i + 2]);
                     //然后加上边界，就是精灵上的纹理位置
                     local[i] += border[i];

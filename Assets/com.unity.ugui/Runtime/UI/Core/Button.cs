@@ -8,6 +8,8 @@ namespace UnityEngine.UI
 {
     /// <summary>
     /// A standard button that sends an event when clicked.
+    /// 按钮组件
+    /// 比Selectable多实现了 IPointerClickHandler、ISubmitHandler
     /// </summary>
     [AddComponentMenu("UI/Button", 30)]
     public class Button : Selectable, IPointerClickHandler, ISubmitHandler
@@ -15,6 +17,7 @@ namespace UnityEngine.UI
         [Serializable]
         /// <summary>
         /// Function definition for a button click event.
+        /// 点击事件触发
         /// </summary>
         public class ButtonClickedEvent : UnityEvent {}
 
@@ -29,6 +32,7 @@ namespace UnityEngine.UI
         /// <summary>
         /// UnityEvent that is triggered when the button is pressed.
         /// Note: Triggered on MouseUp after MouseDown on the same object.
+        /// 点击事件处理
         /// </summary>
         ///<example>
         ///<code>
@@ -61,6 +65,10 @@ namespace UnityEngine.UI
             set { m_OnClick = value; }
         }
 
+        /// <summary>
+        /// 处理点击事件
+        /// 组件必须有效且可交互，会调用 m_OnClick 的所有监听器
+        /// </summary>
         private void Press()
         {
             if (!IsActive() || !IsInteractable())
@@ -74,6 +82,8 @@ namespace UnityEngine.UI
         /// Call all registered IPointerClickHandlers.
         /// Register button presses using the IPointerClickHandler. You can also use it to tell what type of click happened (left, right etc.).
         /// Make sure your Scene has an EventSystem.
+        /// 点击事件
+        /// 只关注左键点击事件
         /// </summary>
         /// <param name="eventData">Pointer Data associated with the event. Typically by the event system.</param>
         /// <example>
@@ -108,14 +118,20 @@ namespace UnityEngine.UI
 
         public virtual void OnPointerClick(PointerEventData eventData)
         {
+            //只关注左键点击
             if (eventData.button != PointerEventData.InputButton.Left)
                 return;
 
+            //这里只处理了逻辑，不处理表现，是因为基类Selectable中已经处理了按键按下、按键弹起的表现，
+            //所以点击事件这里只处理监听调用即可，表现可以交给父类
             Press();
         }
 
         /// <summary>
         /// Call all registered ISubmitHandler.
+        /// 提交事件
+        /// 就是通过提交按键触发的，比如假如定义了回车键是提交按键，那么就会触发这个
+        /// 如果要修改提交按键，修改Edit->Project Settings->Input
         /// </summary>
         /// <param name="eventData">Associated data with the event. Typically by the event system.</param>
         /// <remarks>
@@ -147,17 +163,26 @@ namespace UnityEngine.UI
 
         public virtual void OnSubmit(BaseEventData eventData)
         {
+            //按下了提交按键，直接会调用Press方法
             Press();
 
             // if we get set disabled during the press
             // don't run the coroutine.
             if (!IsActive() || !IsInteractable())
                 return;
-
+            
+            //转换到按下状态
+            //这里需要手动处理表现，是因为Submit事件是键盘输入单独触发，父类没有处理键盘的按下、弹起，所以需要手动调用
             DoStateTransition(SelectionState.Pressed, false);
+            //按下结束后，恢复颜色
             StartCoroutine(OnFinishSubmit());
         }
 
+        /// <summary>
+        /// 按键结束后，奖状态
+        /// TODO 这里设计有缺陷，这里只考虑了按钮使用颜色作为表现状态转换的方式，是不对的，还可能使用sprite、动画作为过渡方式
+        /// </summary>
+        /// <returns></returns>
         private IEnumerator OnFinishSubmit()
         {
             var fadeTime = colors.fadeDuration;
