@@ -17,6 +17,7 @@ namespace UnityEngine.UI
 
     /// <summary>
     /// Base class for effects that modify the generated Mesh.
+    /// Mesh效果修改器基类
     /// </summary>
     /// <example>
     /// <code>

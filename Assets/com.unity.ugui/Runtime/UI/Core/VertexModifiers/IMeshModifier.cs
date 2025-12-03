@@ -15,6 +15,8 @@ namespace UnityEngine.UI
     /// <summary>
     /// Interface which allows for the modification of verticies in a Graphic before they are passed to the CanvasRenderer.
     /// When a Graphic generates a list of vertices they are passed (in order) to any components on the GameObject that implement IMeshModifier. This component can modify the given Mesh.
+    /// Mesh效果修改器接口
+    /// 用于修改已经生成的Mesh，造成一些额外的例如阴影、描边等效果
     /// </summary>
     public interface IMeshModifier
     {

@@ -5,6 +5,8 @@ namespace UnityEngine.UI
     [AddComponentMenu("UI/Effects/Position As UV1", 82)]
     /// <summary>
     /// An IVertexModifier which sets the raw vertex position into UV1 of the generated verts.
+    /// 把顶点的位置信息，写入到顶点的UV1通道中
+    /// UI元素默认使用UV0进行纹理映射，这里启用UV1是为了后面shader做一些特殊效果而使用的
     /// </summary>
     public class PositionAsUV1 : BaseMeshEffect
     {
