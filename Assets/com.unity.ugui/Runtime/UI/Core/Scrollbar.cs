@@ -10,6 +10,7 @@ namespace UnityEngine.UI
     [RequireComponent(typeof(RectTransform))]
     /// <summary>
     /// A standard scrollbar with a variable sized handle that can be dragged between 0 and 1.
+    /// 滚动条
     /// </summary>
     /// <remarks>
     /// The slider component is a Selectable that controls a handle which follow the current value and is sized according to the size property.
@@ -20,26 +21,31 @@ namespace UnityEngine.UI
     {
         /// <summary>
         /// Setting that indicates one of four directions the scrollbar will travel.
+        /// 滚动方向
         /// </summary>
         public enum Direction
         {
             /// <summary>
             /// Starting position is the Left.
+            /// 左到右
             /// </summary>
             LeftToRight,
 
             /// <summary>
             /// Starting position is the Right
+            /// 右到左
             /// </summary>
             RightToLeft,
 
             /// <summary>
             /// Starting position is the Bottom.
+            /// 下到上
             /// </summary>
             BottomToTop,
 
             /// <summary>
             /// Starting position is the Top.
+            /// 上到下
             /// </summary>
             TopToBottom,
         }
@@ -47,35 +53,42 @@ namespace UnityEngine.UI
         [Serializable]
         /// <summary>
         /// UnityEvent callback for when a scrollbar is scrolled.
+        /// 滚动条回调
         /// </summary>
         public class ScrollEvent : UnityEvent<float> {}
 
+        //滑块RectTrs
         [SerializeField]
         private RectTransform m_HandleRect;
 
         /// <summary>
         /// The RectTransform to use for the handle.
+        /// 滑块RectTrs
         /// </summary>
         public RectTransform handleRect { get { return m_HandleRect; } set { if (SetPropertyUtility.SetClass(ref m_HandleRect, value)) { UpdateCachedReferences(); UpdateVisuals(); } } }
 
         // Direction of movement.
+        //滚动方向
         [SerializeField]
         private Direction m_Direction = Direction.LeftToRight;
 
         /// <summary>
         /// The direction of the scrollbar from minimum to maximum value.
+        /// 滚动方向
         /// </summary>
         public Direction direction { get { return m_Direction; } set { if (SetPropertyUtility.SetStruct(ref m_Direction, value)) UpdateVisuals(); } }
 
         protected Scrollbar()
         {}
 
+        //滚动条的值，0~1
         [Range(0f, 1f)]
         [SerializeField]
         private float m_Value;
 
         /// <summary>
         /// The current value of the scrollbar, between 0 and 1.
+        /// 滚动条值，0~1
         /// </summary>
         public float value
         {
@@ -101,26 +114,32 @@ namespace UnityEngine.UI
             Set(input, false);
         }
 
+        //滑块自身的大小，是相对于Container的比例，为1则是跟Container一样大小
         [Range(0f, 1f)]
         [SerializeField]
         private float m_Size = 0.2f;
 
         /// <summary>
         /// The size of the scrollbar handle where 1 means it fills the entire scrollbar.
+        /// 滑块自身的大小，是相对于Container的比例，为1则是跟Container一样大小
         /// </summary>
         public float size { get { return m_Size; } set { if (SetPropertyUtility.SetStruct(ref m_Size, Mathf.Clamp01(value))) UpdateVisuals(); } }
 
+        //总移动步长
+        //如果设置了>1，那么移动范围0~1就是在这个总步长的比例上进行移动，离散型移动，不再是无极移动
         [Range(0, 11)]
         [SerializeField]
         private int m_NumberOfSteps = 0;
 
         /// <summary>
         /// The number of steps to use for the value. A value of 0 disables use of steps.
+        /// 总移动步长
         /// </summary>
         public int numberOfSteps { get { return m_NumberOfSteps; } set { if (SetPropertyUtility.SetStruct(ref m_NumberOfSteps, value)) { Set(m_Value); UpdateVisuals(); } } }
 
         [Space(6)]
 
+        //值变更回调
         [SerializeField]
         private ScrollEvent m_OnValueChanged = new ScrollEvent();
 
@@ -133,9 +152,11 @@ namespace UnityEngine.UI
         public ScrollEvent onValueChanged { get { return m_OnValueChanged; } set { m_OnValueChanged = value; } }
 
         // Private fields
-
+        //Handle滑块的父节点，也就是SlidingArea
         private RectTransform m_ContainerRect;
 
+        //开始拖拽事件的时候，指针所在的位置相对于滑块区域中心的偏移量
+        //赋值的前提是开始拖拽事件指针不在滑块上、而是在非滑块区域
         // The offset from handle position to mouse down position
         private Vector2 m_Offset = Vector2.zero;
 
@@ -147,6 +168,7 @@ namespace UnityEngine.UI
         private DrivenRectTransformTracker m_Tracker;
         #pragma warning restore 649
         private Coroutine m_PointerDownRepeat;
+        //是否指针按下但是没有开始拖拽
         private bool isPointerDownAndNotDragging = false;
 
         // This "delayed" mechanism is required for case 1037681.
@@ -222,8 +244,12 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 更新Handle父节点，也就是SlidingArea
+        /// </summary>
         void UpdateCachedReferences()
         {
+            //获取滑块的父节点，也就是SlidingArea
             if (m_HandleRect && m_HandleRect.parent != null)
                 m_ContainerRect = m_HandleRect.parent.GetComponent<RectTransform>();
             else
@@ -266,6 +292,7 @@ namespace UnityEngine.UI
             Vertical = 1
         }
 
+        //将滑动方向转换成轴向，只有横竖两个轴向
         Axis axis { get { return (m_Direction == Direction.LeftToRight || m_Direction == Direction.RightToLeft) ? Axis.Horizontal : Axis.Vertical; } }
         bool reverseValue { get { return m_Direction == Direction.RightToLeft || m_Direction == Direction.TopToBottom; } }
 
@@ -301,6 +328,11 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 处理拖拽事件
+        /// 更新滑块位置、更新滚动值
+        /// </summary>
+        /// <param name="eventData"></param>
         // Update the scroll bar's position based on the mouse.
         void UpdateDrag(PointerEventData eventData)
         {
@@ -311,17 +343,26 @@ namespace UnityEngine.UI
                 return;
 
             Vector2 position = Vector2.zero;
+            //如果拖拽事件、鼠标按下事件，不再同一个显示器，那么不处理拖拽事件
             if (!MultipleDisplayUtilities.GetRelativeMousePositionForDrag(eventData, ref position))
                 return;
 
+            //计算点击相对于Container的本地位置，如果点击位置不在整个滚动区域内，那么不处理
             Vector2 localCursor;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(m_ContainerRect, position, eventData.pressEventCamera, out localCursor))
                 return;
 
+            //如果指针是在Handle中，那么这里相当于先把位置转换到handle的中心，然后再计算出相对于Container中心的偏移；这样计算的目的是为了当鼠标点击Handle的任意位置的时候，都相当于点击了Handle的正中心
+            //如果指针是不在Handle，那么这里m_offset是0，直接就是计算出当前指针位置相对于Container的偏移
+            //这个偏移相当于是滑块中心应该在Container中的相对位置
             Vector2 handleCenterRelativeToContainerCorner = localCursor - m_Offset - m_ContainerRect.rect.position;
+            //(m_HandleRect.rect.size - m_HandleRect.sizeDelta) * 0.5f 是半个滑块的大小
+            //把当前指针位置相对于Container的偏移减去半个滑块的大小，就相当于计算出当前位置下，滑块左下角相对于Container的偏移
             Vector2 handleCorner = handleCenterRelativeToContainerCorner - (m_HandleRect.rect.size - m_HandleRect.sizeDelta) * 0.5f;
 
+            //根据滚动轴向，计算出Container滑动尺寸，看是取高度、还是宽度
             float parentSize = axis == 0 ? m_ContainerRect.rect.width : m_ContainerRect.rect.height;
+            //计算出Container减去滑块自身大小后，还剩余可滑动的尺寸
             float remainingSize = parentSize * (1 - size);
             if (remainingSize <= 0)
                 return;
@@ -349,6 +390,12 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 判断是否是可以拖拽的状态
+        /// 有效、可交互、是左键
+        /// </summary>
+        /// <param name="eventData"></param>
+        /// <returns></returns>
         private bool MayDrag(PointerEventData eventData)
         {
             return IsActive() && IsInteractable() && eventData.button == PointerEventData.InputButton.Left;
@@ -356,6 +403,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Handling for when the scrollbar value is begin being dragged.
+        /// 拖拽开始事件处理
         /// </summary>
         public virtual void OnBeginDrag(PointerEventData eventData)
         {
@@ -367,7 +415,12 @@ namespace UnityEngine.UI
             if (m_ContainerRect == null)
                 return;
 
+            //先重置偏移量
             m_Offset = Vector2.zero;
+            
+            //开始拖拽的时候判断下鼠标点是不是在Handle区域内
+            //如果在Hanle范围内，那么就是普通拖拽；如果不再，那就是先把滑块瞬移到指定位置、再开启拖拽
+            //这里是先计算一下指针到滑块中心点的相对偏移
             if (RectTransformUtility.RectangleContainsScreenPoint(m_HandleRect, eventData.pointerPressRaycast.screenPosition, eventData.enterEventCamera))
             {
                 Vector2 localMousePos;
@@ -378,6 +431,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Handling for when the scrollbar value is dragged.
+        /// 处理拖拽事件
         /// </summary>
         public virtual void OnDrag(PointerEventData eventData)
         {

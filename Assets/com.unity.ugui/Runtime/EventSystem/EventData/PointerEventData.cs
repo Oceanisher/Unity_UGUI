@@ -361,6 +361,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The camera associated with the last OnPointerEnter event.
+        /// 发出指针当前射线结果对应的相机
         /// </summary>
         public Camera enterEventCamera
         {
@@ -369,6 +370,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The camera associated with the last OnPointerPress event.
+        /// 发出指针按下的射线结果对应的相机
         /// </summary>
         public Camera pressEventCamera
         {

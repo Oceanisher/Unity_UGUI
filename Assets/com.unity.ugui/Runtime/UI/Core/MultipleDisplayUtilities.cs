@@ -9,6 +9,10 @@ namespace UnityEngine.UI
     {
         /// <summary>
         /// Converts the current drag position into a relative position for the display.
+        /// 获取多显示器下的指针位置
+        ///
+        /// 主显示器下可以直接用eventData.position，但是其他显示器需要转换坐标后才能正常使用
+        /// 返回值是指针按下事件、指针当前事件，是否在同一个显示器
         /// </summary>
         /// <param name="eventData"></param>
         /// <param name="position"></param>
@@ -18,15 +22,20 @@ namespace UnityEngine.UI
             #if UNITY_EDITOR
             position = eventData.position;
             #else
+            //获取指针按下事件所在的显示器
             int pressDisplayIndex = eventData.pointerPressRaycast.displayIndex;
+            //指针当前事件在所在屏幕上的相对位置
             var relativePosition = RelativeMouseAtScaled(eventData.position, eventData.displayIndex);
+            //相对位置的Z值代表所在的显示器
             int currentDisplayIndex = (int)relativePosition.z;
 
             // Discard events on a different display.
+            //判断两个事件是否在同一个显示器
             if (currentDisplayIndex != pressDisplayIndex)
                 return false;
 
             // If we are not on the main display then we must use the relative position.
+            //当前事件是否在主显示器，主显示器下可以直接用eventData.position，其他显示器用相对位置
             position = pressDisplayIndex != 0 ? (Vector2)relativePosition : eventData.position;
             #endif
             return true;
