@@ -370,6 +370,11 @@ namespace UnityEngine.UI
             DoUpdateDrag(handleCorner, remainingSize);
         }
 
+        /// <summary>
+        /// 根据计算出来的当前Handle左下角的位置、以及Container减去Handle尺寸后可滑动区域大小，移动Handle滑块
+        /// </summary>
+        /// <param name="handleCorner"></param>
+        /// <param name="remainingSize"></param>
         //this function is testable, it is found using reflection in ScrollbarClamp test
         private void DoUpdateDrag(Vector2 handleCorner, float remainingSize)
         {
