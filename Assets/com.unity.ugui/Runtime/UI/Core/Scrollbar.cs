@@ -121,7 +121,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The size of the scrollbar handle where 1 means it fills the entire scrollbar.
-        /// 滑块自身的大小，是相对于Container的比例，为1则是跟Container一样大小
+        /// 滑块自身的大小，是相对于Container的比例，为1则是跟Container一样大小，默认情况下是0.2
         /// </summary>
         public float size { get { return m_Size; } set { if (SetPropertyUtility.SetStruct(ref m_Size, Mathf.Clamp01(value))) UpdateVisuals(); } }
 
@@ -160,15 +160,20 @@ namespace UnityEngine.UI
         // The offset from handle position to mouse down position
         private Vector2 m_Offset = Vector2.zero;
 
+        //
         // Size of each step.
+        //用于导航事件中，滑块每次移动的距离
+        //如果总步长没有大于1，那么默认每次移动0.1个百分比距离
         float stepSize { get { return (m_NumberOfSteps > 1) ? 1f / (m_NumberOfSteps - 1) : 0.1f; } }
 
         // field is never assigned warning
         #pragma warning disable 649
         private DrivenRectTransformTracker m_Tracker;
         #pragma warning restore 649
+        //鼠标按下的协程
         private Coroutine m_PointerDownRepeat;
-        //是否指针按下但是没有开始拖拽
+        //是否指针按下但是没有开始拖拽，鼠标按下时=true，鼠标抬起、或者拖拽开始=false
+        //用于处理鼠标按下，还没弹起、还没拖拽的时候，将滑块按照每帧移动一个滑块大小的速度，把滑块移动进鼠标范围
         private bool isPointerDownAndNotDragging = false;
 
         // This "delayed" mechanism is required for case 1037681.
@@ -256,18 +261,28 @@ namespace UnityEngine.UI
                 m_ContainerRect = null;
         }
 
+        /// <summary>
+        /// 设置滑块位置
+        /// </summary>
+        /// <param name="input">0~1的值，因为是以Handle左下角计算的</param>
+        /// <param name="sendCallback"></param>
         void Set(float input, bool sendCallback = true)
         {
+            //旧滚动值
             float currentValue = m_Value;
 
+            //修改当前滚动值
             // bugfix (case 802330) clamp01 input in callee before calling this function, this allows inertia from dragging content to go past extremities without being clamped
             m_Value = input;
 
+            //如果没有变化，就跳过
             // If the stepped value doesn't match the last one, it's time to update
             if (currentValue == value)
                 return;
 
+            //更新视觉
             UpdateVisuals();
+            //是否要触发滚动值变更事件
             if (sendCallback)
             {
                 UISystemProfilerApi.AddMarker("Scrollbar.value", this);
@@ -294,8 +309,12 @@ namespace UnityEngine.UI
 
         //将滑动方向转换成轴向，只有横竖两个轴向
         Axis axis { get { return (m_Direction == Direction.LeftToRight || m_Direction == Direction.RightToLeft) ? Axis.Horizontal : Axis.Vertical; } }
+        //是否是翻转方向，这里认为从左到右、从下到上是正方形，而其他两个是反方向
         bool reverseValue { get { return m_Direction == Direction.RightToLeft || m_Direction == Direction.TopToBottom; } }
 
+        /// <summary>
+        /// 更新视觉
+        /// </summary>
         // Force-update the scroll bar. Useful if you've changed the properties and want it to update visually.
         private void UpdateVisuals()
         {
@@ -308,21 +327,35 @@ namespace UnityEngine.UI
             if (m_ContainerRect != null)
             {
                 m_Tracker.Add(this, m_HandleRect, DrivenTransformProperties.Anchors);
+                
+                //这是通过修改Handle的anchor值来实现滑动的
+                //比如默认从左到右滑动的Handle的 anchorMin=(0, 0) , anchorMax=(0.2, 1)，这就是说Handle自身长度占Container的20%
+                //然后通过把anchorMin、anchorMax的x值，实现Handle滑块的滑动
                 Vector2 anchorMin = Vector2.zero;
                 Vector2 anchorMax = Vector2.one;
 
+                //计算移动比例，因为是通过移动anchor计算的，所以只计算比例即可
+                //1 - size 是计算出可移动的剩余比例，比如默认handle占20%，那么这里计算出来0.8
+                //那么用滚动值value去乘以这个值，就能得到得到移动比例值
                 float movement = Mathf.Clamp01(value) * (1 - size);
+                //如果是反向移动，1 - movement才是移动值
                 if (reverseValue)
                 {
+                    //1 - movement才是移动值，anchor左下角等于移动值减去size
                     anchorMin[(int)axis] = 1 - movement - size;
+                    //1 - movement才是移动值，anchor右上角等于移动值
                     anchorMax[(int)axis] = 1 - movement;
                 }
+                //如果是正向移动
                 else
                 {
+                    //anchor左下角等于移动值
                     anchorMin[(int)axis] = movement;
+                    //anchor右上角等于移动值+size值
                     anchorMax[(int)axis] = movement + size;
                 }
 
+                //计算后的anchor值赋值给Handle滑块
                 m_HandleRect.anchorMin = anchorMin;
                 m_HandleRect.anchorMax = anchorMax;
             }
@@ -373,8 +406,8 @@ namespace UnityEngine.UI
         /// <summary>
         /// 根据计算出来的当前Handle左下角的位置、以及Container减去Handle尺寸后可滑动区域大小，移动Handle滑块
         /// </summary>
-        /// <param name="handleCorner"></param>
-        /// <param name="remainingSize"></param>
+        /// <param name="handleCorner">Handle左下角应该在的位置，相对Container的位置</param>
+        /// <param name="remainingSize">Container减去Handle尺寸后可滑动区域大小</param>
         //this function is testable, it is found using reflection in ScrollbarClamp test
         private void DoUpdateDrag(Vector2 handleCorner, float remainingSize)
         {
@@ -449,6 +482,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Event triggered when pointer is pressed down on the scrollbar.
+        /// 鼠标按下事件
         /// </summary>
         public override void OnPointerDown(PointerEventData eventData)
         {
@@ -456,6 +490,7 @@ namespace UnityEngine.UI
                 return;
 
             base.OnPointerDown(eventData);
+            //设置鼠标按下、但是没有拖拽变量
             isPointerDownAndNotDragging = true;
             m_PointerDownRepeat = StartCoroutine(ClickRepeat(eventData.pointerPressRaycast.screenPosition, eventData.enterEventCamera));
         }
@@ -467,20 +502,28 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Coroutine function for handling continual press during Scrollbar.OnPointerDown.
+        /// 鼠标按下时启动的协程
+        /// 每帧向鼠标方向移动一个滑块的距离，直到鼠标进入滑块范围
+        /// 也就是说，看起来点击一下滑动条，滑块就立即跳转过去，实际上是用了很多帧移动过去的
         /// </summary>
         protected IEnumerator ClickRepeat(Vector2 screenPosition, Camera camera)
         {
+            //只要鼠标按下、并没没有抬起、并且没有移动，就会持续生效
             while (isPointerDownAndNotDragging)
             {
+                //如果鼠标按下的位置不在滑块内
                 if (!RectTransformUtility.RectangleContainsScreenPoint(m_HandleRect, screenPosition, camera))
                 {
+                    //计算鼠标对于滑块的相对位置
                     Vector2 localMousePos;
                     if (RectTransformUtility.ScreenPointToLocalPointInRectangle(m_HandleRect, screenPosition, camera, out localMousePos))
                     {
+                        //根据当前设置的滑动方向，拿出鼠标对应的坐标位置
                         var axisCoordinate = axis == 0 ? localMousePos.x : localMousePos.y;
 
+                        //每帧向鼠标方向移动一个滑块的距离
                         // modifying value depending on direction, fixes (case 925824)
-
+                        //
                         float change = axisCoordinate < 0 ? size : -size;
                         value += reverseValue ? change : -change;
                         value = Mathf.Clamp01(value);
@@ -495,15 +538,18 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Event triggered when pointer is released after pressing on the scrollbar.
+        /// 鼠标弹起
         /// </summary>
         public override void OnPointerUp(PointerEventData eventData)
         {
             base.OnPointerUp(eventData);
+            //把该变量置为false
             isPointerDownAndNotDragging = false;
         }
 
         /// <summary>
         /// Handling for movement events.
+        /// 导航移动事件响应，按键移动、摇杆移动等Move事件
         /// </summary>
         public override void OnMove(AxisEventData eventData)
         {
@@ -513,6 +559,7 @@ namespace UnityEngine.UI
                 return;
             }
 
+            //需要判断下在对应的方向上是否发现了其他可导航UI元素，如果发现了，那么不会进行滑块移动，而是会导航到另一个UI上
             switch (eventData.moveDir)
             {
                 case MoveDirection.Left:
