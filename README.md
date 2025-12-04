@@ -1,2 +1,3 @@
-# Unity_UGUI
-Unity UGUI源码解析
+# Unity_UGUI 全中文注释
+力求理解每一行代码。
+不定时更新中。
