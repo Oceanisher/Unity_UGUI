@@ -31,9 +31,15 @@ namespace UnityEngine.EventSystems
         }
 
 #if UNITY_EDITOR
+        /// <summary>
+        /// 每次组件在Inspector中发生值变化时会调用
+        /// </summary>
         protected virtual void OnValidate()
         {}
 
+        /// <summary>
+        /// 首次添加组件、或者Inspector点击Reset的时候调用
+        /// </summary>
         protected virtual void Reset()
         {}
 #endif

@@ -107,6 +107,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Set the value of the scrollbar without invoking onValueChanged callback.
+        /// 只滑动，不触发值更新事件
         /// </summary>
         /// <param name="input">The new value for the scrollbar.</param>
         public virtual void SetValueWithoutNotify(float input)
@@ -145,6 +146,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Handling for when the scrollbar value is changed.
+        /// 值变更的回调
         /// </summary>
         /// <remarks>
         /// Allow for delegate-based subscriptions for faster events than 'eventReceiver', and allowing for multiple receivers.
@@ -177,6 +179,8 @@ namespace UnityEngine.UI
         private bool isPointerDownAndNotDragging = false;
 
         // This "delayed" mechanism is required for case 1037681.
+        //目前是编辑器下使用，延迟更新视觉，更新放到Update中执行
+        //因为Validate可能会调用多次，其实只要Update更新视觉一次就好
         private bool m_DelayedUpdateVisuals = false;
 
 #if UNITY_EDITOR
@@ -314,6 +318,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// 更新视觉
+        /// 使用锚点变更的方式来进行滑动条变更，而不是使用位置变更，是为了后面翻转方向、翻转轴向的时候无需额外的处理。
         /// </summary>
         // Force-update the scroll bar. Useful if you've changed the properties and want it to update visually.
         private void UpdateVisuals()
@@ -457,7 +462,6 @@ namespace UnityEngine.UI
             m_Offset = Vector2.zero;
             
             //开始拖拽的时候判断下鼠标点是不是在Handle区域内
-            //如果在Hanle范围内，那么就是普通拖拽；如果不再，那就是先把滑块瞬移到指定位置、再开启拖拽
             //这里是先计算一下指针到滑块中心点的相对偏移
             if (RectTransformUtility.RectangleContainsScreenPoint(m_HandleRect, eventData.pointerPressRaycast.screenPosition, eventData.enterEventCamera))
             {
@@ -483,6 +487,7 @@ namespace UnityEngine.UI
         /// <summary>
         /// Event triggered when pointer is pressed down on the scrollbar.
         /// 鼠标按下事件
+        /// 主要是启动一个协程，把滑块以每帧一个滑块距离的移动方式，将滑块移动到鼠标所在位置；一旦鼠标进入滑块范围，协程结束
         /// </summary>
         public override void OnPointerDown(PointerEventData eventData)
         {
@@ -492,6 +497,7 @@ namespace UnityEngine.UI
             base.OnPointerDown(eventData);
             //设置鼠标按下、但是没有拖拽变量
             isPointerDownAndNotDragging = true;
+            //启动滑块移动协程
             m_PointerDownRepeat = StartCoroutine(ClickRepeat(eventData.pointerPressRaycast.screenPosition, eventData.enterEventCamera));
         }
 
@@ -591,6 +597,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Prevents selection if we we move on the Horizontal axis. See Selectable.FindSelectableOnLeft.
+        /// 如果导航模式是自动、移动方向是横向，那么就不再寻找左侧UI元素、而是响应自身的滚动
         /// </summary>
         public override Selectable FindSelectableOnLeft()
         {
@@ -601,6 +608,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Prevents selection if we we move on the Horizontal axis.  See Selectable.FindSelectableOnRight.
+        /// 如果导航模式是自动、移动方向是横向，那么就不再寻找右侧UI元素、而是响应自身的滚动
         /// </summary>
         public override Selectable FindSelectableOnRight()
         {
@@ -611,6 +619,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Prevents selection if we we move on the Vertical axis. See Selectable.FindSelectableOnUp.
+        /// 如果导航模式是自动、移动方向是竖向，那么就不再寻找上侧UI元素、而是响应自身的滚动
         /// </summary>
         public override Selectable FindSelectableOnUp()
         {
@@ -621,6 +630,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Prevents selection if we we move on the Vertical axis. See Selectable.FindSelectableOnDown.
+        /// 如果导航模式是自动、移动方向是竖向，那么就不再寻找下侧UI元素、而是响应自身的滚动
         /// </summary>
         public override Selectable FindSelectableOnDown()
         {
@@ -631,6 +641,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// See: IInitializePotentialDragHandler.OnInitializePotentialDrag
+        /// 在按下、并还没开始拖拽的时候，取消拖拽阈值，也就是说只要移动就是拖拽，而不是超过某个距离才算拖拽
         /// </summary>
         public virtual void OnInitializePotentialDrag(PointerEventData eventData)
         {
@@ -639,9 +650,10 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Set the direction of the scrollbar, optionally setting the layout as well.
+        /// 设置滚动方向
         /// </summary>
         /// <param name="direction">The direction of the scrollbar.</param>
-        /// <param name="includeRectLayouts">Should the layout be flipped together with the direction?</param>
+        /// <param name="includeRectLayouts">Should the layout be flipped together with the direction?布局是否要跟随滚动方向改变而变更</param>
         public void SetDirection(Direction direction, bool includeRectLayouts)
         {
             Axis oldAxis = axis;
@@ -651,9 +663,12 @@ namespace UnityEngine.UI
             if (!includeRectLayouts)
                 return;
 
+            //轴向变更，如从横向、变成纵向，那么翻转滚动条，让它的长度变成宽度、宽度变成长度。而且pivot不变。相当于沿着对角线翻转。
+            //内部子元素都是以父节点为中心进行同样的变更，其锚点对齐方式进行变化
             if (axis != oldAxis)
                 RectTransformUtility.FlipLayoutAxes(transform as RectTransform, true, true);
 
+            //如果是正反方向发生变更，那么让滚动条沿着某个轴向进行翻转
             if (reverseValue != oldReverse)
                 RectTransformUtility.FlipLayoutOnAxis(transform as RectTransform, (int)axis, true, true);
         }
