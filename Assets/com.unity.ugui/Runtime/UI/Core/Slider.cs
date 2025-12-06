@@ -9,6 +9,8 @@ namespace UnityEngine.UI
     [RequireComponent(typeof(RectTransform))]
     /// <summary>
     /// A standard slider that can be moved between a minimum and maximum value.
+    /// 进度条、滑动条
+    /// 原理与ScrollBar类似，细节上有差别
     /// </summary>
     /// <remarks>
     /// The slider component is a Selectable that controls a fill, a handle, or both. The fill, when used, spans from the minimum value to the current value while the handle, when used, follow the current value.
@@ -19,6 +21,7 @@ namespace UnityEngine.UI
     {
         /// <summary>
         /// Setting that indicates one of four directions.
+        /// 滑动条滑动方向
         /// </summary>
         public enum Direction
         {
@@ -46,14 +49,17 @@ namespace UnityEngine.UI
         [Serializable]
         /// <summary>
         /// Event type used by the UI.Slider.
+        /// 滑动条值变更事件
         /// </summary>
         public class SliderEvent : UnityEvent<float> {}
 
+        //进度条节点
         [SerializeField]
         private RectTransform m_FillRect;
 
         /// <summary>
         /// Optional RectTransform to use as fill for the slider.
+        /// 进度条节点
         /// </summary>
         /// <example>
         /// <code>
@@ -80,11 +86,13 @@ namespace UnityEngine.UI
         /// </example>
         public RectTransform fillRect { get { return m_FillRect; } set { if (SetPropertyUtility.SetClass(ref m_FillRect, value)) {UpdateCachedReferences(); UpdateVisuals(); } } }
 
+        //滑块节点
         [SerializeField]
         private RectTransform m_HandleRect;
 
         /// <summary>
         /// Optional RectTransform to use as a handle for the slider.
+        /// 滑块节点
         /// </summary>
         /// <example>
         /// <code>
@@ -114,11 +122,13 @@ namespace UnityEngine.UI
 
         [Space]
 
+        //滑动方向
         [SerializeField]
         private Direction m_Direction = Direction.LeftToRight;
 
         /// <summary>
         /// The direction of the slider, from minimum to maximum value.
+        /// 滑动方向
         /// </summary>
         /// <example>
         /// <code>
@@ -150,6 +160,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The minimum allowed value of the slider.
+        /// 进度条最小值
         /// </summary>
         /// <example>
         /// <code>
@@ -173,11 +184,13 @@ namespace UnityEngine.UI
         /// </example>
         public float minValue { get { return m_MinValue; } set { if (SetPropertyUtility.SetStruct(ref m_MinValue, value)) { Set(m_Value); UpdateVisuals(); } } }
 
+        //进度条最大值
         [SerializeField]
         private float m_MaxValue = 1;
 
         /// <summary>
         /// The maximum allowed value of the slider.
+        /// 进度条最大值
         /// </summary>
         /// <example>
         /// <code>
@@ -201,11 +214,13 @@ namespace UnityEngine.UI
         /// </example>
         public float maxValue { get { return m_MaxValue; } set { if (SetPropertyUtility.SetStruct(ref m_MaxValue, value)) { Set(m_Value); UpdateVisuals(); } } }
 
+        //进度条是否是整数型的，只能一格一格的移动
         [SerializeField]
         private bool m_WholeNumbers = false;
 
         /// <summary>
         /// Should the value only be allowed to be whole numbers?
+        /// 进度条是否是整数型的，只能一格一格的移动
         /// </summary>
         /// <example>
         /// <code>
@@ -229,11 +244,13 @@ namespace UnityEngine.UI
         /// </example>
         public bool wholeNumbers { get { return m_WholeNumbers; } set { if (SetPropertyUtility.SetStruct(ref m_WholeNumbers, value)) { Set(m_Value); UpdateVisuals(); } } }
 
+        //进度值
         [SerializeField]
         protected float m_Value;
 
         /// <summary>
         /// The current value of the slider.
+        /// 进度值
         /// </summary>
         /// <example>
         /// <code>
@@ -270,6 +287,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Set the value of the slider without invoking onValueChanged callback.
+        /// 设置进度值，并且不触发值变更回调
         /// </summary>
         /// <param name="input">The new value for the slider.</param>
         public virtual void SetValueWithoutNotify(float input)
@@ -279,6 +297,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// The current value of the slider normalized into a value between 0 and 1.
+        /// 当前进度值标准化，0~1
         /// </summary>
         /// <example>
         /// <code>
@@ -307,6 +326,7 @@ namespace UnityEngine.UI
             {
                 if (Mathf.Approximately(minValue, maxValue))
                     return 0;
+                //逆向插值，返回百分比
                 return Mathf.InverseLerp(minValue, maxValue, value);
             }
             set
@@ -317,11 +337,13 @@ namespace UnityEngine.UI
 
         [Space]
 
+        //值变更回调
         [SerializeField]
         private SliderEvent m_OnValueChanged = new SliderEvent();
 
         /// <summary>
         /// Callback executed when the value of the slider is changed.
+        /// 值变更回调
         /// </summary>
         /// <example>
         /// <code>
@@ -353,13 +375,19 @@ namespace UnityEngine.UI
 
         // Private fields
 
+        //进度条使用的图片
         private Image m_FillImage;
+        //进度条Trs
         private Transform m_FillTransform;
+        //进度条父节点Container
         private RectTransform m_FillContainerRect;
+        //滑块Trs
         private Transform m_HandleTransform;
+        //滑块父节点Container
         private RectTransform m_HandleContainerRect;
 
         // The offset from handle position to mouse down position
+        //鼠标点击的偏移值，相对于滑块中心的偏移向量
         private Vector2 m_Offset = Vector2.zero;
 
         // field is never assigned warning
@@ -367,9 +395,11 @@ namespace UnityEngine.UI
         private DrivenRectTransformTracker m_Tracker;
         #pragma warning restore 649
 
+        //延迟更新视觉，主要用在编辑器模式下
         // This "delayed" mechanism is required for case 1037681.
         private bool m_DelayedUpdateVisuals = false;
 
+        //移动的步长，如果设置为整数型移动，那么每次移动1；否则默认每次移动0.1个百分比距离
         // Size of each step.
         float stepSize { get { return wholeNumbers ? 1 : (maxValue - minValue) * 0.1f; } }
 
@@ -478,6 +508,9 @@ namespace UnityEngine.UI
             base.OnDidApplyAnimationProperties();
         }
 
+        /// <summary>
+        /// 更新所有缓存的Trs或者其他组件信息
+        /// </summary>
         void UpdateCachedReferences()
         {
             if (m_FillRect && m_FillRect != (RectTransform)transform)
@@ -507,6 +540,12 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// input输入值Clamp到minValue、maxValue之间
+        /// 如果是整数模式，还要四舍五入一下
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
         float ClampValue(float input)
         {
             float newValue = Mathf.Clamp(input, minValue, maxValue);
@@ -517,6 +556,9 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Set the value of the slider.
+        /// 设置Slider的值
+        /// 如果值变更，会更新视觉
+        /// 所以有些设置最大值、是否是整数型等，在调用了这个Set之后，还需要手动调用下更新视觉方法，因为此时进度值没变
         /// </summary>
         /// <param name="input">The new value for the slider.</param>
         /// <param name="sendCallback">If the OnValueChanged callback should be invoked.</param>
@@ -525,6 +567,7 @@ namespace UnityEngine.UI
         /// </remarks>
         protected virtual void Set(float input, bool sendCallback = true)
         {
+            //输入值需要clamp一下，限制值范围
             // Clamp the input
             float newValue = ClampValue(input);
 
@@ -552,15 +595,21 @@ namespace UnityEngine.UI
             UpdateVisuals();
         }
 
+        //滑动方向，与ScrollBar一致
         enum Axis
         {
             Horizontal = 0,
             Vertical = 1
         }
 
+        //滑动方向，与ScrollBar一致
         Axis axis { get { return (m_Direction == Direction.LeftToRight || m_Direction == Direction.RightToLeft) ? Axis.Horizontal : Axis.Vertical; } }
+        //是否是翻转方向，与ScrollBar一致
         bool reverseValue { get { return m_Direction == Direction.RightToLeft || m_Direction == Direction.TopToBottom; } }
 
+        /// <summary>
+        /// 更新视觉信息
+        /// </summary>
         // Force-update the slider. Useful if you've changed the properties and want it to update visually.
         private void UpdateVisuals()
         {
@@ -571,16 +620,19 @@ namespace UnityEngine.UI
 
             m_Tracker.Clear();
 
+            //修改进度条
             if (m_FillContainerRect != null)
             {
                 m_Tracker.Add(this, m_FillRect, DrivenTransformProperties.Anchors);
                 Vector2 anchorMin = Vector2.zero;
                 Vector2 anchorMax = Vector2.one;
 
+                //修改进度条中图片的进度，图片必须是Filled模式
                 if (m_FillImage != null && m_FillImage.type == Image.Type.Filled)
                 {
                     m_FillImage.fillAmount = normalizedValue;
                 }
+                //如果没有图片、或者图片模式不是Filled模式，那么就通过修改anchor的方式，模拟图片的进度展示
                 else
                 {
                     if (reverseValue)
@@ -589,10 +641,12 @@ namespace UnityEngine.UI
                         anchorMax[(int)axis] = normalizedValue;
                 }
 
+                //这里的anchor在有进度图片、并且模式是Filled模式时，min=(0,0)，max=(1,1)
                 m_FillRect.anchorMin = anchorMin;
                 m_FillRect.anchorMax = anchorMax;
             }
 
+            //修改滑块，滑块在竖直方向是stretch对齐，所以它的移动轴上的anchor值是一样的
             if (m_HandleContainerRect != null)
             {
                 m_Tracker.Add(this, m_HandleRect, DrivenTransformProperties.Anchors);
@@ -604,6 +658,12 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 根据鼠标事件，更新滑块位置
+        /// 看上去只更新了值，但是实际上最终调用Set方法设置值，而Set方法中有更新视觉的方法
+        /// </summary>
+        /// <param name="eventData"></param>
+        /// <param name="cam"></param>
         // Update the slider's position based on the mouse.
         void UpdateDrag(PointerEventData eventData, Camera cam)
         {
@@ -613,22 +673,37 @@ namespace UnityEngine.UI
                 Vector2 position = Vector2.zero;
                 if (!MultipleDisplayUtilities.GetRelativeMousePositionForDrag(eventData, ref position))
                     return;
-
+                
                 Vector2 localCursor;
                 if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(clickRect, position, cam, out localCursor))
                     return;
+                //rect.position，是矩形左下角相对于矩形中心的位置，本地坐标
+                //将localCursor，减去rect.position，就能将localCursor转换为相对于clickRect左下角的本地坐标
                 localCursor -= clickRect.rect.position;
 
+                //用这个本地坐标减去鼠标按到滑块时的偏移，就能得出鼠标相对于clickRect左下角的真实偏移向量
+                //然后根据当前的移动轴向，取这个真实移动的值，对比clickRect在这个轴向上的大小，就得到了进度
                 float val = Mathf.Clamp01((localCursor - m_Offset)[(int)axis] / clickRect.rect.size[(int)axis]);
+                //根据是否翻转正向，就能得到最终的进度值
                 normalizedValue = (reverseValue ? 1f - val : val);
             }
         }
 
+        /// <summary>
+        /// 是否可以触发拖拽事件
+        /// 有效、可交互、左键
+        /// </summary>
+        /// <param name="eventData"></param>
+        /// <returns></returns>
         private bool MayDrag(PointerEventData eventData)
         {
             return IsActive() && IsInteractable() && eventData.button == PointerEventData.InputButton.Left;
         }
 
+        /// <summary>
+        /// 鼠标按下处理
+        /// </summary>
+        /// <param name="eventData"></param>
         public override void OnPointerDown(PointerEventData eventData)
         {
             if (!MayDrag(eventData))
@@ -637,12 +712,15 @@ namespace UnityEngine.UI
             base.OnPointerDown(eventData);
 
             m_Offset = Vector2.zero;
+            //如果鼠标按到了滑块上，那么记录一下鼠标当前位置（转换为相对于滑块中心的本地偏移量）
             if (m_HandleContainerRect != null && RectTransformUtility.RectangleContainsScreenPoint(m_HandleRect, eventData.pointerPressRaycast.screenPosition, eventData.enterEventCamera))
             {
                 Vector2 localMousePos;
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle(m_HandleRect, eventData.pointerPressRaycast.screenPosition, eventData.pressEventCamera, out localMousePos))
                     m_Offset = localMousePos;
             }
+            //如果没有按到滑块上、而是按到了滑块之外的区域，滑块需要跳转到当前指针位置
+            //与ScrollBar不同的是，ScrollBar是使用每帧移动一个滑块的距离的方式，移动到鼠标位置；而进度条是瞬间跳转
             else
             {
                 // Outside the slider handle - jump to this point instead
@@ -650,6 +728,11 @@ namespace UnityEngine.UI
             }
         }
 
+        /// <summary>
+        /// 拖拽事件
+        /// 直接根据鼠标位置更新进度
+        /// </summary>
+        /// <param name="eventData"></param>
         public virtual void OnDrag(PointerEventData eventData)
         {
             if (!MayDrag(eventData))
@@ -657,6 +740,11 @@ namespace UnityEngine.UI
             UpdateDrag(eventData, eventData.pressEventCamera);
         }
 
+        /// <summary>
+        /// 处理导航事件，如左右按键、摇杆等
+        /// 与ScrollBar类似
+        /// </summary>
+        /// <param name="eventData"></param>
         public override void OnMove(AxisEventData eventData)
         {
             if (!IsActive() || !IsInteractable())
@@ -696,6 +784,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// See Selectable.FindSelectableOnLeft
+        /// 与ScrollBar类似
         /// </summary>
         public override Selectable FindSelectableOnLeft()
         {
@@ -706,6 +795,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// See Selectable.FindSelectableOnRight
+        /// 与ScrollBar类似
         /// </summary>
         public override Selectable FindSelectableOnRight()
         {
@@ -716,6 +806,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// See Selectable.FindSelectableOnUp
+        /// 与ScrollBar类似
         /// </summary>
         public override Selectable FindSelectableOnUp()
         {
@@ -726,6 +817,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// See Selectable.FindSelectableOnDown
+        /// 与ScrollBar类似
         /// </summary>
         public override Selectable FindSelectableOnDown()
         {
@@ -734,6 +826,10 @@ namespace UnityEngine.UI
             return base.FindSelectableOnDown();
         }
 
+        /// <summary>
+        /// 在按下、并还没开始拖拽的时候，取消拖拽阈值，也就是说只要移动就是拖拽，而不是超过某个距离才算拖拽
+        /// </summary>
+        /// <param name="eventData"></param>
         public virtual void OnInitializePotentialDrag(PointerEventData eventData)
         {
             eventData.useDragThreshold = false;
@@ -741,6 +837,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Sets the direction of this slider, optionally changing the layout as well.
+        /// 与ScrollBar类似
         /// </summary>
         /// <param name="direction">The direction of the slider</param>
         /// <param name="includeRectLayouts">Should the layout be flipped together with the slider direction</param>
