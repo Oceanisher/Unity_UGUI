@@ -26,6 +26,7 @@ Shader "UI/Default"
         _ColorMask ("Color Mask", Float) = 15
 
         //是否使用UI的Alpha裁切，默认关闭
+        //对应的就是CanvasRenderer组件的 cullTransparentMesh，决定是否对透明像素进行Alpha剔除
         [Toggle(UNITY_UI_ALPHACLIP)] _UseUIAlphaClip ("Use Alpha Clip", Float) = 0
     }
 

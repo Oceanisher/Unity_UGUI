@@ -712,6 +712,7 @@ namespace UnityEngine.UI
             //调用TextGenerator，传入字符串、字符设置，生成对应的字符网格
             cachedTextGenerator.PopulateWithErrors(text, settings, gameObject);
 
+            //获取字符网格的顶点信息
             // Apply the offset to the vertices
             IList<UIVertex> verts = cachedTextGenerator.verts;
             //计算出字体需要的缩放值
