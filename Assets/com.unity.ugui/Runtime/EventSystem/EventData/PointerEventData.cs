@@ -140,7 +140,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Current pointer position.
-        /// Canvas空间中的相对坐标
+        /// 鼠标位置，屏幕空间位置
         /// </summary>
         public Vector2 position { get; set; }
 
@@ -206,6 +206,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// The amount of scroll since the last update.
+        /// 滑轮或者触屏的每帧滚动值变更
         /// </summary>
         public Vector2 scrollDelta { get; set; }
 
@@ -343,7 +344,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Is the pointer moving.
-        /// 鼠标是否移动过
+        /// 鼠标是否正在移动
         /// </summary>
         public bool IsPointerMoving()
         {
@@ -352,7 +353,7 @@ namespace UnityEngine.EventSystems
 
         /// <summary>
         /// Is scroll being used on the input device.
-        /// 鼠标是否滚动过
+        /// 鼠标是否正在滚动
         /// </summary>
         public bool IsScrolling()
         {
